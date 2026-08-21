@@ -34,6 +34,8 @@ interface AppContextType {
   currentUser: User;
   setCurrentUser: (user: User) => void;
   addUser: (user: Omit<User, 'id'>) => void;
+  updateUser: (id: string, updates: Partial<User>) => void;
+  deleteUser: (id: string) => void;
   boards: Board[];
   activeBoardId: string | null;
   setActiveBoardId: (id: string | null) => void;
@@ -241,6 +243,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       id: `user-${Date.now()}`,
     };
     setUsers((prev) => [...prev, newUser]);
+  };
+
+  const updateUser = (id: string, updates: Partial<User>) => {
+    setUsers((prev) =>
+      prev.map((u) => (u.id === id ? { ...u, ...updates } : u))
+    );
+  };
+
+  const deleteUser = (id: string) => {
+    setUsers((prev) => prev.filter((u) => u.id !== id));
   };
 
   // Board Actions
@@ -545,6 +557,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         currentUser,
         setCurrentUser,
         addUser,
+        updateUser,
+        deleteUser,
         boards,
         activeBoardId,
         setActiveBoardId,

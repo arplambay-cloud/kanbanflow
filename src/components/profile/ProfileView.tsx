@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   User as UserIcon,
@@ -11,6 +11,10 @@ import {
   Layers,
   ArrowRight,
   Sparkles,
+  Edit3,
+  Check,
+  X,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
 import { PriorityBadge } from '../common/PriorityBadge';
@@ -19,14 +23,20 @@ import { formatDate, isOverdue } from '../../utils/date';
 export const ProfileView: React.FC = () => {
   const {
     currentUser,
-    users,
-    setCurrentUser,
+    updateUser,
     tasks,
     boards,
     columns,
     openTaskModal,
     updateTask,
   } = useApp();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState(currentUser.name);
+  const [email, setEmail] = useState(currentUser.email);
+  const [jobTitle, setJobTitle] = useState(currentUser.jobTitle || '');
+  const [avatar, setAvatar] = useState(currentUser.avatar || '');
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const doneColumnIds = new Set(
     columns
@@ -47,72 +57,203 @@ export const ProfileView: React.FC = () => {
       ? Math.round((completedTasks.length / assignedTasks.length) * 100)
       : 0;
 
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim()) return;
+
+    updateUser(currentUser.id, {
+      name: name.trim(),
+      email: email.trim(),
+      jobTitle: jobTitle.trim() || undefined,
+      avatar: avatar.trim() || undefined,
+    });
+
+    setIsEditing(false);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
+  };
+
+  const handleCancelEdit = () => {
+    setName(currentUser.name);
+    setEmail(currentUser.email);
+    setJobTitle(currentUser.jobTitle || '');
+    setAvatar(currentUser.avatar || '');
+    setIsEditing(false);
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
       {/* Page Title */}
-      <div>
-        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-          User Profile
-        </h2>
-        <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-          Manage your account information and view your personal assigned workload.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+            User Profile
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            Manage your personal profile details, contact information, and workload.
+          </p>
+        </div>
+
+        {!isEditing && (
+          <button
+            onClick={() => setIsEditing(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg text-xs font-semibold shadow-sm transition-all"
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+            <span>Edit Profile</span>
+          </button>
+        )}
       </div>
+
+      {/* Save Success Banner */}
+      {saveSuccess && (
+        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold flex items-center gap-2 animate-fade-in shadow-2xs">
+          <Check className="w-4 h-4 text-emerald-600" />
+          <span>Your profile details have been saved successfully!</span>
+        </div>
+      )}
 
       {/* User Card */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-subtle p-6 sm:p-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-slate-100">
-          <div className="flex items-center gap-4 sm:gap-6">
-            <UserAvatar user={currentUser} size="xl" />
-            <div>
-              <div className="flex items-center gap-2.5">
-                <h3 className="text-xl sm:text-2xl font-bold text-slate-900">
-                  {currentUser.name}
+        {isEditing ? (
+          /* Profile Edit Form */
+          <form onSubmit={handleSaveProfile} className="space-y-6 animate-fade-in">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-slate-900 text-base">
+                  Edit Personal Information
                 </h3>
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
-                    currentUser.role === 'admin'
-                      ? 'bg-indigo-100 text-indigo-800'
-                      : 'bg-slate-100 text-slate-700'
-                  }`}
-                >
-                  {currentUser.role}
-                </span>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Update your display name, email, job title, and avatar.
+                </p>
               </div>
-              <p className="text-xs sm:text-sm text-slate-500 mt-0.5 flex items-center gap-1.5">
-                <Briefcase className="w-3.5 h-3.5 text-slate-400" />
-                <span>{currentUser.jobTitle || 'Team Member'}</span>
-              </p>
-              <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-slate-400" />
-                <span>{currentUser.email}</span>
-              </p>
+              <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
+                {currentUser.role}
+              </span>
             </div>
-          </div>
 
-          {/* Quick Team Member Switcher */}
-          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
-              Switch Active User:
-            </span>
-            <div className="flex items-center gap-2">
-              {users.map((u) => (
-                <button
-                  key={u.id}
-                  onClick={() => setCurrentUser(u)}
-                  className={`relative p-1 rounded-md transition-all ${
-                    u.id === currentUser.id
-                      ? 'ring-2 ring-indigo-600 ring-offset-2 scale-105'
-                      : 'opacity-70 hover:opacity-100'
-                  }`}
-                  title={`Switch to ${u.name}`}
-                >
-                  <UserAvatar user={u} size="sm" />
-                </button>
-              ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Full Name */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Full Name <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Alex Morgan"
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-slate-200 text-xs sm:text-sm font-medium bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Email Address */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Email Address <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="alex@company.com"
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-slate-200 text-xs sm:text-sm font-medium bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Job Title */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Job Title / Position
+                </label>
+                <div className="relative">
+                  <Briefcase className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                    placeholder="e.g. Senior Frontend Engineer"
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-slate-200 text-xs sm:text-sm font-medium bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Avatar URL */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Avatar Image URL
+                </label>
+                <div className="relative">
+                  <ImageIcon className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="url"
+                    value={avatar}
+                    onChange={(e) => setAvatar(e.target.value)}
+                    placeholder="https://images.unsplash.com/..."
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-slate-200 text-xs sm:text-sm font-medium bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="inline-flex items-center gap-1.5 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg text-xs font-semibold shadow-sm transition-all"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Save Changes</span>
+              </button>
+            </div>
+          </form>
+        ) : (
+          /* View Mode */
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+            <div className="flex items-center gap-4 sm:gap-6">
+              <UserAvatar user={currentUser} size="xl" />
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900">
+                    {currentUser.name}
+                  </h3>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
+                      currentUser.role === 'admin'
+                        ? 'bg-indigo-100 text-indigo-800'
+                        : 'bg-slate-100 text-slate-700'
+                    }`}
+                  >
+                    {currentUser.role}
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5 flex items-center gap-1.5">
+                  <Briefcase className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{currentUser.jobTitle || 'Team Member'}</span>
+                </p>
+                <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{currentUser.email}</span>
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Task Metrics Grid for Current User */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6">

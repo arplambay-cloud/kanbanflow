@@ -9,17 +9,26 @@ import {
   Plus,
   Shield,
   Trash2,
+  Edit2,
   Sparkles,
+  User as UserIcon,
+  Mail,
+  Briefcase,
+  X,
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
 import { CustomDropdown } from '../common/CustomDropdown';
+import { User } from '../../types';
 
 export const SettingsView: React.FC = () => {
   const {
     workspace,
     updateWorkspace,
     users,
+    currentUser,
     addUser,
+    updateUser,
+    deleteUser,
     resetToDefaultData,
   } = useApp();
 
@@ -33,6 +42,13 @@ export const SettingsView: React.FC = () => {
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [newMemberTitle, setNewMemberTitle] = useState('');
   const [newMemberRole, setNewMemberRole] = useState<'admin' | 'member'>('member');
+
+  // Edit existing member modal state
+  const [editingMember, setEditingMember] = useState<User | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editTitle, setEditTitle] = useState('');
+  const [editRole, setEditRole] = useState<'admin' | 'member'>('member');
 
   const handleSaveWorkspace = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +79,38 @@ export const SettingsView: React.FC = () => {
     setNewMemberEmail('');
     setNewMemberTitle('');
     setIsAddingMember(false);
+  };
+
+  const startEditMember = (member: User) => {
+    setEditingMember(member);
+    setEditName(member.name);
+    setEditEmail(member.email);
+    setEditTitle(member.jobTitle || '');
+    setEditRole((member.role as 'admin' | 'member') || 'member');
+  };
+
+  const handleSaveMemberEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMember || !editName.trim() || !editEmail.trim()) return;
+
+    updateUser(editingMember.id, {
+      name: editName.trim(),
+      email: editEmail.trim(),
+      jobTitle: editTitle.trim() || undefined,
+      role: editRole,
+    });
+
+    setEditingMember(null);
+  };
+
+  const handleDeleteMember = (memberId: string, memberName: string) => {
+    if (memberId === currentUser.id) {
+      alert('You cannot remove your own active account from the workspace.');
+      return;
+    }
+    if (window.confirm(`Are you sure you want to remove ${memberName} from this workspace?`)) {
+      deleteUser(memberId);
+    }
   };
 
   return (
@@ -109,7 +157,7 @@ export const SettingsView: React.FC = () => {
               value={workspaceName}
               onChange={(e) => setWorkspaceName(e.target.value)}
               placeholder="e.g. Acme Product Team"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
             />
             <p className="text-[11px] text-slate-400 mt-1">
               This name will appear on the sidebar brand header, navigation bars, and across the app.
@@ -125,7 +173,7 @@ export const SettingsView: React.FC = () => {
               value={workspaceDesc}
               onChange={(e) => setWorkspaceDesc(e.target.value)}
               placeholder="Brief summary of your team's mission or purpose..."
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 resize-none transition-all"
             />
           </div>
 
@@ -157,7 +205,7 @@ export const SettingsView: React.FC = () => {
 
           <button
             onClick={() => setIsAddingMember(!isAddingMember)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-semibold transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>Add Member</span>
@@ -180,7 +228,7 @@ export const SettingsView: React.FC = () => {
                 placeholder="Full Name (e.g. Jordan Smith)"
                 value={newMemberName}
                 onChange={(e) => setNewMemberName(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                className="px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 font-medium transition-all"
               />
               <input
                 type="email"
@@ -188,14 +236,14 @@ export const SettingsView: React.FC = () => {
                 placeholder="Email address"
                 value={newMemberEmail}
                 onChange={(e) => setNewMemberEmail(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
               />
               <input
                 type="text"
                 placeholder="Role / Title (e.g. Frontend Engineer)"
                 value={newMemberTitle}
                 onChange={(e) => setNewMemberTitle(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
               />
               <CustomDropdown
                 size="sm"
@@ -212,18 +260,119 @@ export const SettingsView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsAddingMember(false)}
-                className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-200 rounded-lg"
+                className="px-3.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg"
+                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all"
               >
                 Add Member
               </button>
             </div>
           </form>
+        )}
+
+        {/* Edit Member Modal / Drawer */}
+        {editingMember && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-200 p-6 animate-scale-up space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <UserAvatar user={editingMember} size="md" />
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900">
+                      Edit Team Member
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      Update details for {editingMember.name}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingMember(null)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveMemberEdit} className="space-y-3.5">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Full Name <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Email Address <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Job Title / Role Description
+                  </label>
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="e.g. Lead Designer"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    Workspace Role Permission
+                  </label>
+                  <CustomDropdown
+                    size="sm"
+                    value={editRole}
+                    onChange={(val) => setEditRole(val as any)}
+                    options={[
+                      { value: 'member', label: 'Member' },
+                      { value: 'admin', label: 'Admin' },
+                    ]}
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setEditingMember(null)}
+                    className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
 
         {/* Members List */}
@@ -233,27 +382,54 @@ export const SettingsView: React.FC = () => {
               key={member.id}
               className="py-3.5 flex items-center justify-between gap-4"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <UserAvatar user={member} size="md" />
-                <div>
-                  <div className="font-semibold text-slate-900 text-sm">
-                    {member.name}
+                <div className="min-w-0">
+                  <div className="font-semibold text-slate-900 text-sm flex items-center gap-2 truncate">
+                    <span>{member.name}</span>
+                    {member.id === currentUser.id && (
+                      <span className="px-1.5 py-0.2 text-[10px] font-bold bg-slate-100 text-slate-600 rounded">
+                        You
+                      </span>
+                    )}
                   </div>
-                  <div className="text-xs text-slate-400">
-                    {member.jobTitle || member.role} • {member.email}
+                  <div className="text-xs text-slate-400 truncate">
+                    {member.jobTitle || 'Team Member'} • {member.email}
                   </div>
                 </div>
               </div>
 
-              <span
-                className={`px-2.5 py-0.5 rounded-md text-xs font-semibold uppercase tracking-wider ${
-                  member.role === 'admin'
-                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                    : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                {member.role}
-              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                <span
+                  className={`px-2.5 py-0.5 rounded-md text-xs font-semibold uppercase tracking-wider ${
+                    member.role === 'admin'
+                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                      : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  {member.role}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => startEditMember(member)}
+                  className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                  title="Edit member details"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+
+                {member.id !== currentUser.id && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteMember(member.id, member.name)}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                    title="Remove member from workspace"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
