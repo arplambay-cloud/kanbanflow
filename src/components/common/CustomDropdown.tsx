@@ -50,8 +50,8 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   }, []);
 
   const sizeStyles = {
-    sm: 'px-2.5 py-1.5 text-xs rounded-lg',
-    md: 'px-3.5 py-2 text-xs sm:text-sm rounded-lg',
+    sm: 'h-9 px-3 text-xs rounded-lg',
+    md: 'h-10 px-3.5 text-xs sm:text-sm rounded-lg',
   };
 
   return (

@@ -164,7 +164,7 @@ export const BoardDetailView: React.FC = () => {
                 placeholder="Search board..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-14 py-1.5 rounded-lg border border-slate-200 text-xs bg-slate-50 focus:bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
+                className="w-full h-9 pl-8 pr-14 rounded-lg border border-slate-200 text-xs bg-slate-50 focus:bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
               />
               <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 pointer-events-none select-none">
                 <kbd className="inline-flex items-center justify-center min-w-[16px] h-4.5 px-1 text-[10px] font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded font-mono shadow-2xs">
@@ -192,7 +192,7 @@ export const BoardDetailView: React.FC = () => {
             {/* Add Task Button */}
             <button
               onClick={() => openTaskModal(undefined, currentBoard.id)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg font-medium text-xs shadow-sm transition-all"
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg font-medium text-xs shadow-sm transition-all"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add Task</span>
