@@ -123,7 +123,7 @@ export const BoardDetailView: React.FC = () => {
             <div className="flex items-center gap-2.5">
               <span
                 className="w-3.5 h-3.5 rounded-md shrink-0 shadow-sm"
-                style={{ backgroundColor: currentBoard.color || '#7839e6' }}
+                style={{ backgroundColor: currentBoard.color || '#7c3bed' }}
               />
               <div>
                 <h2 className="font-bold text-slate-900 text-base sm:text-lg flex items-center gap-2">

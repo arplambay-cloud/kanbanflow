@@ -21,7 +21,7 @@ export const StatusPill: React.FC<StatusPillProps> = ({
     dotColor = '#10b981';
   } else if (normalized.includes('progress') || normalized.includes('review') || normalized.includes('doing')) {
     colorClasses = 'bg-brand-50 text-brand-700 border-brand-200/80';
-    dotColor = '#7839e6';
+    dotColor = '#7c3bed';
   } else if (normalized.includes('to do') || normalized.includes('backlog') || normalized.includes('todo')) {
     colorClasses = 'bg-slate-100 text-slate-700 border-slate-200/80';
     dotColor = '#64748b';

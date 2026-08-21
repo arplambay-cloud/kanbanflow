@@ -39,7 +39,7 @@ export const initialWorkspace: Workspace = {
   id: 'ws-1',
   name: 'Acme Product Team',
   description: 'Central task workspace for agile product delivery and sprint tracking.',
-  accentColor: '#7839e6',
+  accentColor: '#7c3bed',
   createdAt: '2026-08-01T08:00:00.000Z',
 };
 
@@ -48,7 +48,7 @@ export const initialBoards: Board[] = [
     id: 'board-1',
     title: 'Product Launch Q3',
     description: 'Sprint planning and core feature delivery for upcoming product launch.',
-    color: '#7839e6',
+    color: '#7c3bed',
     createdAt: '2026-08-10T09:00:00.000Z',
     updatedAt: '2026-08-20T10:00:00.000Z',
   },

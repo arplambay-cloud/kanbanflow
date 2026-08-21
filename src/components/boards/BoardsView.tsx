@@ -16,7 +16,7 @@ import {
 import { formatDate } from '../../utils/date';
 
 const PRESET_COLORS = [
-  '#7839e6', // Primary Brand Purple
+  '#7c3bed', // Primary Brand Purple
   '#ec4899', // Pink
   '#10b981', // Emerald
   '#f59e0b', // Amber
@@ -114,7 +114,7 @@ export const BoardsView: React.FC = () => {
               {/* Top Accent Stripe */}
               <div
                 className="h-1.5 w-full absolute top-0 left-0"
-                style={{ backgroundColor: board.color || '#7839e6' }}
+                style={{ backgroundColor: board.color || '#7c3bed' }}
               />
 
               {/* Card Content Top */}
@@ -123,7 +123,7 @@ export const BoardsView: React.FC = () => {
                   <div className="flex items-center gap-2 min-w-0">
                     <span
                       className="w-3 h-3 rounded-md shrink-0"
-                      style={{ backgroundColor: board.color || '#7839e6' }}
+                      style={{ backgroundColor: board.color || '#7c3bed' }}
                     />
                     <h3 className="font-bold text-slate-900 text-base truncate group-hover:text-indigo-600 transition-colors">
                       {board.title}

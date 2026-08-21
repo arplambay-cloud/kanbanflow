@@ -194,7 +194,7 @@ export const TaskModal: React.FC = () => {
                 options={boards.map((b) => ({
                   value: b.id,
                   label: b.title,
-                  colorDot: b.color || '#7839e6',
+                  colorDot: b.color || '#7c3bed',
                 }))}
                 className="w-full"
               />

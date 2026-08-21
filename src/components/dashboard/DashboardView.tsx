@@ -360,7 +360,7 @@ export const DashboardView: React.FC = () => {
                       <div className="flex items-center gap-2 min-w-0">
                         <span
                           className="w-2.5 h-2.5 rounded-md shrink-0"
-                          style={{ backgroundColor: board.color || '#7839e6' }}
+                          style={{ backgroundColor: board.color || '#7c3bed' }}
                         />
                         <span className="font-semibold text-slate-800 text-xs truncate">
                           {board.title}

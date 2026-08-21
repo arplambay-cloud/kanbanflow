@@ -177,7 +177,7 @@ export const TaskListView: React.FC = () => {
             options={boards.map((b) => ({
               value: b.id,
               label: b.title,
-              colorDot: b.color || '#7839e6',
+              colorDot: b.color || '#7c3bed',
             }))}
             className="min-w-[140px]"
           />
@@ -239,7 +239,7 @@ export const TaskListView: React.FC = () => {
               ...boards.map((b) => ({
                 value: b.id,
                 label: b.title,
-                colorDot: b.color || '#7839e6',
+                colorDot: b.color || '#7c3bed',
               })),
             ]}
             className="min-w-[130px]"
@@ -383,7 +383,7 @@ export const TaskListView: React.FC = () => {
                         >
                           <span
                             className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: board?.color || '#7839e6' }}
+                            style={{ backgroundColor: board?.color || '#7c3bed' }}
                           />
                           <span>{board?.title || 'Board'}</span>
                         </button>

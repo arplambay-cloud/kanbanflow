@@ -184,7 +184,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   >
                     <span
                       className="w-2.5 h-2.5 rounded-md shrink-0"
-                      style={{ backgroundColor: b.color || '#7839e6' }}
+                      style={{ backgroundColor: b.color || '#7c3bed' }}
                     />
                     <span className="truncate">{b.title}</span>
                   </button>
