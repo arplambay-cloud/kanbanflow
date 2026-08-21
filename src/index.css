@@ -79,6 +79,12 @@ button, a, input, select, textarea, [tabindex] {
   transition-duration: 150ms;
 }
 
+/* Razor-sharp 1px focus without box-shadow doubling */
+input:focus, textarea:focus, select:focus, button:focus {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
 /* Glass effect utilities */
 .glass {
   background: rgba(255, 255, 255, 0.85);

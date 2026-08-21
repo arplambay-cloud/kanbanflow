@@ -104,7 +104,7 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ onSuccess 
                     placeholder="••••••••"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-slate-200 text-xs sm:text-sm font-medium bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all"
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-slate-200 text-xs sm:text-sm font-medium bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-600 transition-all"
                   />
                 </div>
               </div>
@@ -122,7 +122,7 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ onSuccess 
                     placeholder="••••••••"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-slate-200 text-xs sm:text-sm font-medium bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all"
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-slate-200 text-xs sm:text-sm font-medium bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-600 transition-all"
                   />
                 </div>
               </div>

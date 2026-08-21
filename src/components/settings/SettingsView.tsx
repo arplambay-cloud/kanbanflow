@@ -109,7 +109,7 @@ export const SettingsView: React.FC = () => {
               value={workspaceName}
               onChange={(e) => setWorkspaceName(e.target.value)}
               placeholder="e.g. Acme Product Team"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm font-medium focus:outline-none focus:border-indigo-600"
             />
             <p className="text-[11px] text-slate-400 mt-1">
               This name will appear on the sidebar brand header, navigation bars, and across the app.
@@ -125,7 +125,7 @@ export const SettingsView: React.FC = () => {
               value={workspaceDesc}
               onChange={(e) => setWorkspaceDesc(e.target.value)}
               placeholder="Brief summary of your team's mission or purpose..."
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 resize-none"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:border-indigo-600 resize-none"
             />
           </div>
 
@@ -180,7 +180,7 @@ export const SettingsView: React.FC = () => {
                 placeholder="Full Name (e.g. Jordan Smith)"
                 value={newMemberName}
                 onChange={(e) => setNewMemberName(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 font-medium"
+                className="px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:border-indigo-600 font-medium"
               />
               <input
                 type="email"
@@ -188,14 +188,14 @@ export const SettingsView: React.FC = () => {
                 placeholder="Email address"
                 value={newMemberEmail}
                 onChange={(e) => setNewMemberEmail(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600"
+                className="px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:border-indigo-600"
               />
               <input
                 type="text"
                 placeholder="Role / Title (e.g. Frontend Engineer)"
                 value={newMemberTitle}
                 onChange={(e) => setNewMemberTitle(e.target.value)}
-                className="px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600"
+                className="px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:border-indigo-600"
               />
               <CustomDropdown
                 size="sm"

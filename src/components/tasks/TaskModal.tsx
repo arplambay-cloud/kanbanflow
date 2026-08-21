@@ -162,7 +162,7 @@ export const TaskModal: React.FC = () => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Design mobile navigation wireframe"
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 font-medium text-sm transition-all"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-600 font-medium text-sm transition-all"
             />
           </div>
 
@@ -176,7 +176,7 @@ export const TaskModal: React.FC = () => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add details, requirements, or links..."
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 text-sm resize-none transition-all"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-600 text-sm resize-none transition-all"
             />
           </div>
 
@@ -253,7 +253,7 @@ export const TaskModal: React.FC = () => {
                   type="date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600"
+                  className="w-full px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:border-indigo-600"
                 />
                 {dueDate && (
                   <button

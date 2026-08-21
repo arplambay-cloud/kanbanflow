@@ -151,7 +151,7 @@ export const BoardDetailView: React.FC = () => {
                 placeholder="Search board..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all"
+                className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:outline-none focus:border-indigo-600 transition-all"
               />
             </div>
 
@@ -333,7 +333,7 @@ export const BoardDetailView: React.FC = () => {
                   placeholder="Column name (e.g. Blocked, In Review)..."
                   value={newColumnTitle}
                   onChange={(e) => setNewColumnTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 mb-2.5"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-600 mb-2.5"
                 />
                 <div className="flex items-center gap-2">
                   <button
