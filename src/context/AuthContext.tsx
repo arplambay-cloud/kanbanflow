@@ -42,42 +42,95 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     if (isSignedIn && clerkUser) {
-      const email = clerkUser.primaryEmailAddress?.emailAddress || '';
+      const email = (clerkUser.primaryEmailAddress?.emailAddress || '').toLowerCase().trim();
       const fullName =
         clerkUser.fullName ||
         clerkUser.firstName ||
         (email ? email.split('@')[0] : 'User');
       const avatar = clerkUser.imageUrl || '';
-      const role = ((clerkUser.publicMetadata?.role as string) || 'admin') as 'admin' | 'member';
-      const jobTitle = (clerkUser.publicMetadata?.jobTitle as string) || 'Workspace Admin';
+
+      // 1. Check if user already has an assigned role in local workspace users list
+      let resolvedRole: 'admin' | 'member' = 'member';
+      let resolvedJobTitle = 'Team Member';
+
+      try {
+        const storedUsersStr = localStorage.getItem('kf_users_v3');
+        if (storedUsersStr) {
+          const storedUsers: User[] = JSON.parse(storedUsersStr);
+          const matchedUser = storedUsers.find((u) => u.email.toLowerCase() === email || u.id === clerkUser.id);
+          if (matchedUser) {
+            resolvedRole = matchedUser.role;
+            resolvedJobTitle = matchedUser.jobTitle || 'Team Member';
+          } else if (storedUsers.length === 0) {
+            // First user to register in the workspace is the Admin
+            resolvedRole = 'admin';
+            resolvedJobTitle = 'Workspace Admin';
+          }
+        } else {
+          // If no users exist yet, first creator is Admin
+          resolvedRole = 'admin';
+          resolvedJobTitle = 'Workspace Admin';
+        }
+      } catch (e) {
+        console.error('Error checking local users', e);
+      }
+
+      // Check Clerk metadata override if present
+      if (clerkUser.publicMetadata?.role) {
+        resolvedRole = clerkUser.publicMetadata.role as 'admin' | 'member';
+      }
+      if (clerkUser.publicMetadata?.jobTitle) {
+        resolvedJobTitle = clerkUser.publicMetadata.jobTitle as string;
+      }
 
       const mappedUser: User = {
         id: clerkUser.id,
         name: fullName,
         email,
         avatar,
-        role,
-        jobTitle,
+        role: resolvedRole,
+        jobTitle: resolvedJobTitle,
       };
 
       setUser(mappedUser);
       localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(mappedUser));
 
-      // Sync to Supabase profiles if Supabase is connected
+      // 2. Sync to Supabase profiles if Supabase is connected
       if (isSupabaseConfigured && supabase) {
         supabase
           .from('profiles')
-          .upsert({
-            id: clerkUser.id,
-            full_name: fullName,
-            email,
-            avatar_url: avatar,
-            role,
-            job_title: jobTitle,
-            updated_at: new Date().toISOString(),
-          })
-          .then();
+          .select('role, job_title')
+          .eq('email', email)
+          .maybeSingle()
+          .then(({ data: existingProfile }) => {
+            let finalRole = resolvedRole;
+            let finalTitle = resolvedJobTitle;
+
+            if (existingProfile) {
+              finalRole = existingProfile.role;
+              finalTitle = existingProfile.job_title || resolvedJobTitle;
+              // If Supabase has a different role, update current state
+              if (finalRole !== resolvedRole) {
+                setUser((prev) => (prev ? { ...prev, role: finalRole, jobTitle: finalTitle } : null));
+              }
+            } else if (supabase) {
+              // Insert into Supabase
+              supabase
+                .from('profiles')
+                .upsert({
+                  id: clerkUser.id,
+                  full_name: fullName,
+                  email,
+                  avatar_url: avatar,
+                  role: finalRole,
+                  job_title: finalTitle,
+                  updated_at: new Date().toISOString(),
+                })
+                .then();
+            }
+          });
       }
+
       setLoading(false);
     } else {
       setUser(null);

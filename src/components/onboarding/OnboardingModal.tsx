@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -47,9 +47,14 @@ export const OnboardingModal: React.FC = () => {
   const ONBOARDING_KEY = 'kf_onboarding_completed_v3';
 
   useEffect(() => {
-    // Open onboarding if user is logged in and onboarding flag not present
+    // Open onboarding if user is logged in as admin and onboarding flag not present
     const completed = localStorage.getItem(ONBOARDING_KEY);
     if (!completed && authUser) {
+      if (authUser.role === 'member') {
+        // Members enter the workspace directly without re-configuring it
+        localStorage.setItem(ONBOARDING_KEY, 'true');
+        return;
+      }
       setIsOpen(true);
       if (authUser.name && authUser.name !== 'User') {
         const firstName = authUser.name.split(' ')[0];
