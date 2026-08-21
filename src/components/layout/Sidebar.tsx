@@ -14,6 +14,7 @@ import {
   Sparkles,
   X,
   LogOut,
+  Building2,
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
 import { useAuth } from '../../context/AuthContext';
@@ -88,9 +89,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <span className="font-bold text-slate-900 text-sm tracking-tight truncate">
                 {workspace.name}
               </span>
-              <span className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                Workspace
+              <span className="text-[11px] text-slate-500 font-medium flex items-center gap-1.5 mt-0.5">
+                <Building2 className="w-3 h-3 text-indigo-600" />
+                <span>Workspace</span>
               </span>
             </div>
           </div>

@@ -12,6 +12,7 @@ import {
   Calendar,
   AlertCircle,
   Kanban,
+  Building2,
 } from 'lucide-react';
 import { PriorityBadge } from '../common/PriorityBadge';
 import { UserAvatar } from '../common/UserAvatar';
@@ -67,8 +68,8 @@ export const DashboardView: React.FC = () => {
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100/80 text-indigo-700 text-xs font-semibold mb-3 border border-indigo-200/60">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-100/80 text-indigo-700 text-xs font-semibold mb-3 border border-indigo-200/60 shadow-xs">
+              <Building2 className="w-3.5 h-3.5 text-indigo-600" />
               <span>{workspace.name}</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
