@@ -60,7 +60,7 @@ export const ProfileView: React.FC = () => {
       </div>
 
       {/* User Card */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-subtle p-6 sm:p-8">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-subtle p-6 sm:p-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-slate-100">
           <div className="flex items-center gap-4 sm:gap-6">
             <UserAvatar user={currentUser} size="xl" />
@@ -91,7 +91,7 @@ export const ProfileView: React.FC = () => {
           </div>
 
           {/* Quick Team Member Switcher */}
-          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+          <div className="bg-slate-50 p-3 rounded-lg border border-slate-200/80">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
               Switch Active User:
             </span>
@@ -100,7 +100,7 @@ export const ProfileView: React.FC = () => {
                 <button
                   key={u.id}
                   onClick={() => setCurrentUser(u)}
-                  className={`relative p-1 rounded-full transition-all ${
+                  className={`relative p-1 rounded-md transition-all ${
                     u.id === currentUser.id
                       ? 'ring-2 ring-indigo-600 ring-offset-2 scale-105'
                       : 'opacity-70 hover:opacity-100'
@@ -116,7 +116,7 @@ export const ProfileView: React.FC = () => {
 
         {/* Task Metrics Grid for Current User */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6">
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
               Total Assigned
             </span>
@@ -125,7 +125,7 @@ export const ProfileView: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-blue-50/50 border border-blue-100">
+          <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-100">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-600">
               Pending
             </span>
@@ -134,7 +134,7 @@ export const ProfileView: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100">
+          <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-100">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-600">
               Completed
             </span>
@@ -143,7 +143,7 @@ export const ProfileView: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100">
+          <div className="p-4 rounded-xl bg-indigo-50/50 border border-indigo-100">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-600">
               Completion Rate
             </span>
@@ -155,7 +155,7 @@ export const ProfileView: React.FC = () => {
       </div>
 
       {/* Assigned Tasks List */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-subtle overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-subtle overflow-hidden">
         <div className="p-5 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-indigo-600" />
@@ -208,7 +208,7 @@ export const ProfileView: React.FC = () => {
                           updateTask(task.id, { columnId: doneCol.id });
                         }
                       }}
-                      className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-colors shrink-0 ${
+                      className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors shrink-0 ${
                         isDone
                           ? 'bg-emerald-500 border-emerald-500 text-white'
                           : 'border-slate-300 hover:border-indigo-500 bg-white'
@@ -242,7 +242,7 @@ export const ProfileView: React.FC = () => {
                   <div className="flex items-center gap-3 shrink-0">
                     {task.dueDate && (
                       <div
-                        className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-lg ${
+                        className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md ${
                           overdue && !isDone
                             ? 'text-rose-700 bg-rose-50 font-semibold'
                             : 'text-slate-500 bg-slate-100'

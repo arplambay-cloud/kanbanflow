@@ -35,7 +35,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, columns }) => {
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           onClick={() => openTaskModal(task)}
-          className={`group relative bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-subtle hover:shadow-card hover:border-slate-300 transition-all cursor-pointer select-none mb-2.5 ${
+          className={`group relative bg-white p-3.5 rounded-lg border border-slate-200/80 shadow-subtle hover:shadow-card hover:border-slate-300 transition-all cursor-pointer select-none mb-2.5 ${
             snapshot.isDragging
               ? 'shadow-floating ring-2 ring-indigo-500/80 rotate-1 scale-[1.02] z-50 bg-white'
               : ''
@@ -49,14 +49,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, columns }) => {
               <button
                 type="button"
                 onClick={() => setShowMenu(!showMenu)}
-                className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all"
+                className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-all"
                 title="Task options"
               >
                 <MoreVertical className="w-3.5 h-3.5" />
               </button>
 
               {showMenu && (
-                <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-30 animate-fade-in text-xs">
+                <div className="absolute right-0 top-full mt-1 w-36 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-30 animate-fade-in text-xs">
                   <button
                     onClick={() => {
                       setShowMenu(false);

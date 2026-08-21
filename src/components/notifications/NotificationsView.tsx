@@ -60,7 +60,7 @@ export const NotificationsView: React.FC = () => {
               Notifications
             </h2>
             {unreadNotificationCount > 0 && (
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700">
+              <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-indigo-100 text-indigo-700">
                 {unreadNotificationCount} unread
               </span>
             )}
@@ -75,7 +75,7 @@ export const NotificationsView: React.FC = () => {
           {unreadNotificationCount > 0 && (
             <button
               onClick={() => markAllNotificationsAsRead()}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold shadow-subtle transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold shadow-subtle transition-all"
             >
               <Check className="w-4 h-4 text-indigo-600" />
               <span>Mark all read</span>
@@ -85,7 +85,7 @@ export const NotificationsView: React.FC = () => {
           {myNotifications.some((n) => n.isRead) && (
             <button
               onClick={() => clearNotifications()}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-rose-600 hover:bg-rose-50 rounded-xl text-xs font-semibold transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-semibold transition-all"
             >
               <Trash2 className="w-4 h-4" />
               <span>Clear read</span>
@@ -98,7 +98,7 @@ export const NotificationsView: React.FC = () => {
       <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
         <button
           onClick={() => setFilter('all')}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
             filter === 'all'
               ? 'bg-slate-900 text-white shadow-sm'
               : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
@@ -108,7 +108,7 @@ export const NotificationsView: React.FC = () => {
         </button>
         <button
           onClick={() => setFilter('unread')}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
             filter === 'unread'
               ? 'bg-slate-900 text-white shadow-sm'
               : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
@@ -119,7 +119,7 @@ export const NotificationsView: React.FC = () => {
       </div>
 
       {/* Notifications List */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-subtle overflow-hidden divide-y divide-slate-100">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-subtle overflow-hidden divide-y divide-slate-100">
         {displayedNotifications.length === 0 ? (
           <div className="py-16 px-6 text-center">
             <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-3">
@@ -183,7 +183,7 @@ export const NotificationsView: React.FC = () => {
                       e.stopPropagation();
                       markNotificationAsRead(n.id);
                     }}
-                    className="p-1.5 text-indigo-600 hover:bg-indigo-100 rounded-lg text-xs font-semibold flex items-center gap-1"
+                    className="p-1.5 text-indigo-600 hover:bg-indigo-100 rounded-md text-xs font-semibold flex items-center gap-1"
                     title="Mark as read"
                   >
                     <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 inline-block" />

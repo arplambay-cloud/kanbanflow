@@ -75,7 +75,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         {/* Workspace Brand Header */}
         <div className="p-4 border-b border-slate-800/80 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-950 shrink-0 font-bold text-lg">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-950 shrink-0 font-bold text-lg">
               <Kanban className="w-5 h-5 text-white" />
             </div>
             <div className="flex flex-col min-w-0">
@@ -103,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               openTaskModal();
               onClose();
             }}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl font-medium text-xs shadow-sm hover:shadow-indigo-900/40 transition-all group"
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-lg font-medium text-xs shadow-sm hover:shadow-indigo-900/40 transition-all group"
           >
             <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
             <span>Create New Task</span>
@@ -125,7 +125,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
                   isActive
                     ? 'bg-slate-800 text-white shadow-sm font-semibold'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
@@ -176,7 +176,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                       navigateToBoard(b.id);
                       onClose();
                     }}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors text-left truncate ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors text-left truncate ${
                       isCurrent
                         ? 'bg-slate-800 text-white font-semibold'
                         : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
@@ -198,7 +198,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className="p-3 border-t border-slate-800 bg-slate-950/40 relative">
           {/* User Switcher Dropdown */}
           {isUserMenuOpen && (
-            <div className="absolute bottom-full left-3 right-3 mb-2 bg-slate-800 border border-slate-700 rounded-2xl shadow-xl p-2 z-50 animate-fade-in">
+            <div className="absolute bottom-full left-3 right-3 mb-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl p-2 z-50 animate-fade-in">
               <div className="px-2 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-700/60 flex items-center justify-between">
                 <span>Switch Team Member</span>
                 <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
@@ -211,7 +211,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                       setCurrentUser(user);
                       setIsUserMenuOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-colors ${
+                    className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
                       user.id === currentUser.id
                         ? 'bg-indigo-600/30 text-white border border-indigo-500/40'
                         : 'text-slate-300 hover:bg-slate-700/60'
@@ -241,7 +241,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
           <button
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-            className="w-full flex items-center justify-between p-2 rounded-xl bg-slate-800/60 hover:bg-slate-800 text-left transition-all border border-slate-700/40 group"
+            className="w-full flex items-center justify-between p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-left transition-all border border-slate-700/40 group"
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <UserAvatar user={currentUser} size="sm" />

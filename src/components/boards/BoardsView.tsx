@@ -71,7 +71,7 @@ export const BoardsView: React.FC = () => {
 
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-xl font-semibold text-xs sm:text-sm shadow-sm hover:shadow transition-all"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg font-semibold text-xs sm:text-sm shadow-sm hover:shadow transition-all"
         >
           <Plus className="w-4 h-4" />
           <span>Create Board</span>
@@ -83,9 +83,9 @@ export const BoardsView: React.FC = () => {
         {/* Create Board Card */}
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="h-56 rounded-2xl border-2 border-dashed border-slate-300 hover:border-indigo-400 bg-slate-50/50 hover:bg-indigo-50/20 p-6 flex flex-col items-center justify-center text-center transition-all group cursor-pointer"
+          className="h-56 rounded-xl border-2 border-dashed border-slate-300 hover:border-indigo-400 bg-slate-50/50 hover:bg-indigo-50/20 p-6 flex flex-col items-center justify-center text-center transition-all group cursor-pointer"
         >
-          <div className="w-12 h-12 rounded-2xl bg-white group-hover:bg-indigo-600 text-slate-400 group-hover:text-white flex items-center justify-center shadow-subtle group-hover:shadow-md transition-all mb-3">
+          <div className="w-12 h-12 rounded-lg bg-white group-hover:bg-indigo-600 text-slate-400 group-hover:text-white flex items-center justify-center shadow-subtle group-hover:shadow-md transition-all mb-3">
             <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform duration-200" />
           </div>
           <span className="font-semibold text-slate-800 group-hover:text-indigo-600 text-sm">
@@ -109,7 +109,7 @@ export const BoardsView: React.FC = () => {
             <div
               key={board.id}
               onClick={() => navigateToBoard(board.id)}
-              className="h-56 bg-white rounded-2xl border border-slate-200 shadow-subtle hover:shadow-card hover:border-slate-300 transition-all flex flex-col justify-between p-5 cursor-pointer relative group overflow-hidden"
+              className="h-56 bg-white rounded-xl border border-slate-200 shadow-subtle hover:shadow-card hover:border-slate-300 transition-all flex flex-col justify-between p-5 cursor-pointer relative group overflow-hidden"
             >
               {/* Top Accent Stripe */}
               <div
@@ -205,7 +205,7 @@ export const BoardsView: React.FC = () => {
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
           <div
-            className="w-full max-w-md bg-white rounded-2xl shadow-floating border border-slate-200 overflow-hidden"
+            className="w-full max-w-md bg-white rounded-xl shadow-floating border border-slate-200 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -220,14 +220,14 @@ export const BoardsView: React.FC = () => {
                 onClick={() => setIsCreateModalOpen(false)}
                 className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Modal Form */}
             <form onSubmit={handleCreateBoard} className="p-6 space-y-4">
               {error && (
-                <div className="p-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">
+                <div className="p-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">
                   {error}
                 </div>
               )}
@@ -243,7 +243,7 @@ export const BoardsView: React.FC = () => {
                   value={boardTitle}
                   onChange={(e) => setBoardTitle(e.target.value)}
                   placeholder="e.g. Mobile App Redesign"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                 />
               </div>
 
@@ -256,7 +256,7 @@ export const BoardsView: React.FC = () => {
                   value={boardDescription}
                   onChange={(e) => setBoardDescription(e.target.value)}
                   placeholder="What is this board for?"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                 />
               </div>
 
@@ -271,7 +271,7 @@ export const BoardsView: React.FC = () => {
                       key={c}
                       type="button"
                       onClick={() => setSelectedColor(c)}
-                      className={`w-7 h-7 rounded-xl transition-all ${
+                      className={`w-7 h-7 rounded-lg transition-all ${
                         selectedColor === c
                           ? 'ring-2 ring-offset-2 ring-slate-800 scale-110'
                           : 'hover:scale-105'
@@ -282,7 +282,7 @@ export const BoardsView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 text-xs text-indigo-800">
+              <div className="p-3 bg-indigo-50/60 rounded-lg border border-indigo-100 text-xs text-indigo-800">
                 <span className="font-semibold">Note:</span> Your new board will automatically include <span className="font-medium">To Do</span>, <span className="font-medium">In Progress</span>, and <span className="font-medium">Done</span> columns. You can add more columns anytime!
               </div>
 
@@ -291,13 +291,13 @@ export const BoardsView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-sm transition-all"
+                  className="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg shadow-sm transition-all"
                 >
                   Create Board
                 </button>

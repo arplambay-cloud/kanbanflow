@@ -96,7 +96,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
       {/* Custom Dropdown Menu */}
       {isOpen && (
         <div
-          className={`absolute left-0 top-full mt-1.5 w-full min-w-[160px] bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 z-50 animate-fade-in max-h-60 overflow-y-auto ${menuClassName}`}
+          className={`absolute left-0 top-full mt-1.5 w-full min-w-[160px] bg-white border border-slate-200 rounded-lg shadow-lg py-1.5 z-50 animate-fade-in max-h-60 overflow-y-auto ${menuClassName}`}
         >
           {options.length === 0 ? (
             <div className="px-3 py-2 text-xs text-slate-400 text-center">

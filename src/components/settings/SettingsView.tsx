@@ -77,9 +77,9 @@ export const SettingsView: React.FC = () => {
       </div>
 
       {/* General Workspace Settings Card */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-subtle p-6 sm:p-8">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-subtle p-6 sm:p-8">
         <div className="flex items-center gap-3 pb-5 border-b border-slate-100">
-          <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
             <Building className="w-5 h-5" />
           </div>
           <div>
@@ -92,7 +92,7 @@ export const SettingsView: React.FC = () => {
 
         <form onSubmit={handleSaveWorkspace} className="mt-6 space-y-5">
           {savedSuccess && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-xl flex items-center gap-2 animate-fade-in">
+            <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-lg flex items-center gap-2 animate-fade-in">
               <Check className="w-4 h-4 text-emerald-600" />
               <span>Workspace settings updated successfully!</span>
             </div>
@@ -108,7 +108,7 @@ export const SettingsView: React.FC = () => {
               value={workspaceName}
               onChange={(e) => setWorkspaceName(e.target.value)}
               placeholder="e.g. Acme Product Team"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <p className="text-[11px] text-slate-400 mt-1">
               This name will appear on the sidebar brand header, navigation bars, and across the app.
@@ -124,14 +124,14 @@ export const SettingsView: React.FC = () => {
               value={workspaceDesc}
               onChange={(e) => setWorkspaceDesc(e.target.value)}
               placeholder="Brief summary of your team's mission or purpose..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
             />
           </div>
 
           <div className="pt-2 flex justify-end">
             <button
               type="submit"
-              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-sm transition-all"
+              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg text-xs sm:text-sm font-semibold shadow-sm transition-all"
             >
               Save Workspace Changes
             </button>
@@ -140,10 +140,10 @@ export const SettingsView: React.FC = () => {
       </div>
 
       {/* Team Members Management Card */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-subtle p-6 sm:p-8">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-subtle p-6 sm:p-8">
         <div className="flex items-center justify-between pb-5 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
               <Users className="w-5 h-5" />
             </div>
             <div>
@@ -156,7 +156,7 @@ export const SettingsView: React.FC = () => {
 
           <button
             onClick={() => setIsAddingMember(!isAddingMember)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-semibold transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Add Member</span>
@@ -167,7 +167,7 @@ export const SettingsView: React.FC = () => {
         {isAddingMember && (
           <form
             onSubmit={handleAddMember}
-            className="my-5 p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 animate-fade-in"
+            className="my-5 p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4 animate-fade-in"
           >
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
               New Member Details
@@ -179,7 +179,7 @@ export const SettingsView: React.FC = () => {
                 placeholder="Full Name (e.g. Jordan Smith)"
                 value={newMemberName}
                 onChange={(e) => setNewMemberName(e.target.value)}
-                className="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                className="px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
               />
               <input
                 type="email"
@@ -187,19 +187,19 @@ export const SettingsView: React.FC = () => {
                 placeholder="Email address"
                 value={newMemberEmail}
                 onChange={(e) => setNewMemberEmail(e.target.value)}
-                className="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
               <input
                 type="text"
                 placeholder="Role / Title (e.g. Frontend Engineer)"
                 value={newMemberTitle}
                 onChange={(e) => setNewMemberTitle(e.target.value)}
-                className="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
               <select
                 value={newMemberRole}
                 onChange={(e) => setNewMemberRole(e.target.value as any)}
-                className="px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="member">Member</option>
                 <option value="admin">Admin</option>
@@ -209,13 +209,13 @@ export const SettingsView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsAddingMember(false)}
-                className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-200 rounded-xl"
+                className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-200 rounded-lg"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl"
+                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg"
               >
                 Add Member
               </button>
@@ -243,7 +243,7 @@ export const SettingsView: React.FC = () => {
               </div>
 
               <span
-                className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
+                className={`px-2.5 py-0.5 rounded-md text-xs font-semibold uppercase tracking-wider ${
                   member.role === 'admin'
                     ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                     : 'bg-slate-100 text-slate-600'
@@ -257,10 +257,10 @@ export const SettingsView: React.FC = () => {
       </div>
 
       {/* Demo Data & Danger Zone */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-subtle p-6 sm:p-8">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-subtle p-6 sm:p-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
               <RotateCcw className="w-5 h-5" />
             </div>
             <div>
@@ -282,7 +282,7 @@ export const SettingsView: React.FC = () => {
                 setWorkspaceName('Acme Product Team');
               }
             }}
-            className="px-4 py-2 bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 rounded-xl text-xs font-semibold transition-colors"
+            className="px-4 py-2 bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
           >
             Reset to Default
           </button>

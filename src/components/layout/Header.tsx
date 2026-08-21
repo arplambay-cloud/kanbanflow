@@ -79,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
       <div className="flex items-center gap-3">
         <button
           onClick={onOpenMobileMenu}
-          className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl lg:hidden focus:outline-none"
+          className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg lg:hidden focus:outline-none"
           title="Open menu"
         >
           <Menu className="w-5 h-5" />
@@ -102,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
         {/* Quick New Task Button */}
         <button
           onClick={() => openTaskModal()}
-          className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-xl font-medium text-xs shadow-sm hover:shadow transition-all"
+          className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg font-medium text-xs shadow-sm hover:shadow transition-all"
         >
           <Plus className="w-4 h-4" />
           <span>New Task</span>
@@ -112,7 +112,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
         <div className="relative" ref={notifRef}>
           <button
             onClick={() => setIsNotifPopoverOpen(!isNotifPopoverOpen)}
-            className="p-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl relative transition-colors focus:outline-none"
+            className="p-2.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg relative transition-colors focus:outline-none"
             title="Notifications"
           >
             <Bell className="w-5 h-5" />
@@ -125,12 +125,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
 
           {/* Notifications dropdown */}
           {isNotifPopoverOpen && (
-            <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-floating border border-slate-200 overflow-hidden z-50 animate-fade-in">
+            <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-floating border border-slate-200 overflow-hidden z-50 animate-fade-in">
               <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                 <div className="flex items-center gap-2">
                   <h4 className="font-semibold text-slate-800 text-sm">Notifications</h4>
                   {unreadNotificationCount > 0 && (
-                    <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    <span className="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200">
                       {unreadNotificationCount} new
                     </span>
                   )}
@@ -221,7 +221,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
         {/* Profile Avatar Quick Button */}
         <button
           onClick={() => setActivePage('profile')}
-          className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-100 transition-colors"
+          className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100 transition-colors"
           title="Go to Profile"
         >
           <UserAvatar user={currentUser} size="sm" />

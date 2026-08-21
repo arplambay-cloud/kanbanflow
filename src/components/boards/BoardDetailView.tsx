@@ -48,7 +48,7 @@ export const BoardDetailView: React.FC = () => {
         <p className="text-slate-500 mb-4">Board not found or has been deleted.</p>
         <button
           onClick={() => setActivePage('boards')}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium"
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium"
         >
           Back to Boards
         </button>
@@ -121,7 +121,7 @@ export const BoardDetailView: React.FC = () => {
 
             <div className="flex items-center gap-2.5">
               <span
-                className="w-3.5 h-3.5 rounded-lg shrink-0 shadow-sm"
+                className="w-3.5 h-3.5 rounded-md shrink-0 shadow-sm"
                 style={{ backgroundColor: currentBoard.color || '#6366f1' }}
               />
               <div>
@@ -150,7 +150,7 @@ export const BoardDetailView: React.FC = () => {
                 placeholder="Search board..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               />
             </div>
 
@@ -158,7 +158,7 @@ export const BoardDetailView: React.FC = () => {
             <select
               value={filterAssigneeId}
               onChange={(e) => setFilterAssigneeId(e.target.value)}
-              className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-white text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs bg-white text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="all">All Members</option>
               <option value="unassigned">Unassigned</option>
@@ -172,7 +172,7 @@ export const BoardDetailView: React.FC = () => {
             {/* Add Task Button */}
             <button
               onClick={() => openTaskModal(undefined, currentBoard.id)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-xl font-medium text-xs shadow-sm transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg font-medium text-xs shadow-sm transition-all"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add Task</span>
@@ -195,7 +195,7 @@ export const BoardDetailView: React.FC = () => {
             return (
               <div
                 key={column.id}
-                className="w-72 sm:w-80 shrink-0 bg-slate-200/60 rounded-2xl p-3 flex flex-col max-h-full border border-slate-200 shadow-subtle"
+                className="w-72 sm:w-80 shrink-0 bg-slate-200/60 rounded-xl p-3 flex flex-col max-h-full border border-slate-200 shadow-subtle"
               >
                 {/* Column Header */}
                 <div className="flex items-center justify-between px-1 py-1.5 mb-2 relative">
@@ -211,7 +211,7 @@ export const BoardDetailView: React.FC = () => {
                           if (e.key === 'Enter') handleUpdateColumnSubmit(column.id);
                           if (e.key === 'Escape') setEditingColumnId(null);
                         }}
-                        className="w-full px-2 py-1 text-xs font-semibold rounded-lg border border-indigo-400 bg-white focus:outline-none"
+                        className="w-full px-2 py-1 text-xs font-semibold rounded-md border border-indigo-400 bg-white focus:outline-none"
                       />
                     </div>
                   ) : (
@@ -229,7 +229,7 @@ export const BoardDetailView: React.FC = () => {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => openTaskModal(undefined, currentBoard.id, column.id)}
-                      className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg transition-colors"
+                      className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-md transition-colors"
                       title="Add task in this column"
                     >
                       <Plus className="w-4 h-4" />
@@ -240,7 +240,7 @@ export const BoardDetailView: React.FC = () => {
                         onClick={() =>
                           setActiveMenuColumnId(isMenuOpen ? null : column.id)
                         }
-                        className="p-1 text-slate-400 hover:text-slate-700 hover:bg-white rounded-lg transition-colors"
+                        className="p-1 text-slate-400 hover:text-slate-700 hover:bg-white rounded-md transition-colors"
                         title="Column settings"
                       >
                         <MoreHorizontal className="w-4 h-4" />
@@ -248,7 +248,7 @@ export const BoardDetailView: React.FC = () => {
 
                       {isMenuOpen && (
                         <div
-                          className="absolute right-0 top-full mt-1 w-40 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-30 animate-fade-in text-xs"
+                          className="absolute right-0 top-full mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-30 animate-fade-in text-xs"
                           onMouseLeave={() => setActiveMenuColumnId(null)}
                         >
                           <button
@@ -291,7 +291,7 @@ export const BoardDetailView: React.FC = () => {
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`flex-1 overflow-y-auto min-h-[120px] rounded-xl transition-colors p-1 ${
+                      className={`flex-1 overflow-y-auto min-h-[120px] rounded-lg transition-colors p-1 ${
                         snapshot.isDraggingOver ? 'bg-indigo-50/60 ring-2 ring-indigo-400/40' : ''
                       }`}
                     >
@@ -308,7 +308,7 @@ export const BoardDetailView: React.FC = () => {
                       {/* Quick "+ Add Card" inline trigger */}
                       <button
                         onClick={() => openTaskModal(undefined, currentBoard.id, column.id)}
-                        className="w-full py-2 px-3 text-xs font-medium text-slate-500 hover:text-indigo-600 hover:bg-white/80 rounded-xl flex items-center justify-center gap-1.5 transition-all border border-dashed border-slate-300 hover:border-indigo-400"
+                        className="w-full py-2 px-3 text-xs font-medium text-slate-500 hover:text-indigo-600 hover:bg-white/80 rounded-lg flex items-center justify-center gap-1.5 transition-all border border-dashed border-slate-300 hover:border-indigo-400"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Add Task</span>
@@ -325,7 +325,7 @@ export const BoardDetailView: React.FC = () => {
             {isAddingColumn ? (
               <form
                 onSubmit={handleAddColumnSubmit}
-                className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-card animate-fade-in"
+                className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-card animate-fade-in"
               >
                 <input
                   type="text"
@@ -334,12 +334,12 @@ export const BoardDetailView: React.FC = () => {
                   placeholder="Column name (e.g. Blocked, In Review)..."
                   value={newColumnTitle}
                   onChange={(e) => setNewColumnTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent mb-2.5"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent mb-2.5"
                 />
                 <div className="flex items-center gap-2">
                   <button
                     type="submit"
-                    className="flex-1 py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
+                    className="flex-1 py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all"
                   >
                     Add Column
                   </button>
@@ -349,7 +349,7 @@ export const BoardDetailView: React.FC = () => {
                       setIsAddingColumn(false);
                       setNewColumnTitle('');
                     }}
-                    className="py-1.5 px-3 text-slate-600 hover:bg-slate-100 rounded-xl text-xs font-medium transition-colors"
+                    className="py-1.5 px-3 text-slate-600 hover:bg-slate-100 rounded-lg text-xs font-medium transition-colors"
                   >
                     Cancel
                   </button>
@@ -358,7 +358,7 @@ export const BoardDetailView: React.FC = () => {
             ) : (
               <button
                 onClick={() => setIsAddingColumn(true)}
-                className="w-full py-3.5 px-4 bg-slate-200/50 hover:bg-slate-200/80 active:bg-slate-300/60 rounded-2xl border border-dashed border-slate-300 text-slate-600 hover:text-slate-900 font-semibold text-xs flex items-center justify-center gap-2 transition-all group"
+                className="w-full py-3.5 px-4 bg-slate-200/50 hover:bg-slate-200/80 active:bg-slate-300/60 rounded-xl border border-dashed border-slate-300 text-slate-600 hover:text-slate-900 font-semibold text-xs flex items-center justify-center gap-2 transition-all group"
               >
                 <Plus className="w-4 h-4 text-slate-500 group-hover:text-indigo-600 group-hover:rotate-90 transition-transform duration-200" />
                 <span>Add Column</span>

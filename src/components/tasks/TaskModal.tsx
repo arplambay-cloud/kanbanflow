@@ -122,7 +122,7 @@ export const TaskModal: React.FC = () => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
       <div
-        className="w-full max-w-xl bg-white rounded-2xl shadow-floating border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]"
+        className="w-full max-w-xl bg-white rounded-xl shadow-floating border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -144,7 +144,7 @@ export const TaskModal: React.FC = () => {
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
           {error && (
-            <div className="p-3 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">
+            <div className="p-3 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg">
               {error}
             </div>
           )}
@@ -161,7 +161,7 @@ export const TaskModal: React.FC = () => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Design mobile navigation wireframe"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium text-sm transition-all"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium text-sm transition-all"
             />
           </div>
 
@@ -175,7 +175,7 @@ export const TaskModal: React.FC = () => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add details, requirements, or links..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm resize-none transition-all"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm resize-none transition-all"
             />
           </div>
 
@@ -190,7 +190,7 @@ export const TaskModal: React.FC = () => {
               <select
                 value={selectedBoardId}
                 onChange={(e) => handleBoardChange(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium"
+                className="w-full px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium"
               >
                 {boards.map((b) => (
                   <option key={b.id} value={b.id}>
@@ -209,7 +209,7 @@ export const TaskModal: React.FC = () => {
               <select
                 value={selectedColumnId}
                 onChange={(e) => setSelectedColumnId(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium"
+                className="w-full px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium"
               >
                 {availableColumns.map((col) => (
                   <option key={col.id} value={col.id}>
@@ -231,7 +231,7 @@ export const TaskModal: React.FC = () => {
               <select
                 value={assigneeId}
                 onChange={(e) => setAssigneeId(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium"
+                className="w-full px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium"
               >
                 <option value="">Unassigned</option>
                 {users.map((u) => (
@@ -253,7 +253,7 @@ export const TaskModal: React.FC = () => {
                   type="date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
                 {dueDate && (
                   <button
@@ -290,7 +290,7 @@ export const TaskModal: React.FC = () => {
                     key={p}
                     type="button"
                     onClick={() => setPriority(p)}
-                    className={`py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all text-center capitalize ${colors[p]}`}
+                    className={`py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all text-center capitalize ${colors[p]}`}
                   >
                     {p}
                   </button>
@@ -301,7 +301,7 @@ export const TaskModal: React.FC = () => {
 
           {/* Selected Assignee preview */}
           {assigneeId && (
-            <div className="p-3 bg-slate-50 rounded-xl flex items-center justify-between border border-slate-100">
+            <div className="p-3 bg-slate-50 rounded-lg flex items-center justify-between border border-slate-100">
               <span className="text-xs text-slate-500 font-medium">Assigned to:</span>
               <UserAvatar
                 user={users.find((u) => u.id === assigneeId)}
@@ -318,7 +318,7 @@ export const TaskModal: React.FC = () => {
               <button
                 type="button"
                 onClick={handleDelete}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl font-medium transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg font-medium transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Delete</span>
@@ -331,13 +331,13 @@ export const TaskModal: React.FC = () => {
               <button
                 type="button"
                 onClick={closeTaskModal}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors"
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-sm hover:shadow transition-all"
+                className="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg shadow-sm hover:shadow transition-all"
               >
                 {task ? 'Save Changes' : 'Create Task'}
               </button>
