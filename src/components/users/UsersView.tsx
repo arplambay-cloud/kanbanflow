@@ -755,7 +755,7 @@ export const UsersView: React.FC = () => {
                           </p>
                         </div>
                       ) : (
-                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        <div className="space-y-2">
                           {userTasks.map((task) => {
                             const board = boards.find((b) => b.id === task.boardId);
                             const column = columns.find((c) => c.id === task.columnId);
