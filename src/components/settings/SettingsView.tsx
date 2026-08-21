@@ -19,9 +19,11 @@ import {
 import { UserAvatar } from '../common/UserAvatar';
 import { CustomDropdown } from '../common/CustomDropdown';
 import { ConfirmDialog } from '../common/ConfirmDialog';
+import { useAuth } from '../../context/AuthContext';
 import { User } from '../../types';
 
 export const SettingsView: React.FC = () => {
+  const { inviteMember } = useAuth();
   const {
     workspace,
     updateWorkspace,
@@ -71,17 +73,24 @@ export const SettingsView: React.FC = () => {
     setTimeout(() => setSavedSuccess(false), 3000);
   };
 
-  const handleAddMember = (e: React.FormEvent) => {
+  const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMemberName.trim() || !newMemberEmail.trim()) return;
 
+    const trimmedEmail = newMemberEmail.trim().toLowerCase();
+    const trimmedName = newMemberName.trim();
+    const trimmedTitle = newMemberTitle.trim() || 'Team Member';
+
     addUser({
-      name: newMemberName.trim(),
-      email: newMemberEmail.trim(),
-      jobTitle: newMemberTitle.trim() || 'Team Member',
+      name: trimmedName,
+      email: trimmedEmail,
+      jobTitle: trimmedTitle,
       role: newMemberRole,
       avatar: `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 1000000)}?w=150&auto=format&fit=crop&q=80`,
     });
+
+    // Send invitation / password link via SMTP
+    await inviteMember(trimmedEmail, trimmedName, newMemberRole, trimmedTitle);
 
     setNewMemberName('');
     setNewMemberEmail('');

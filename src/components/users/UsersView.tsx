@@ -28,8 +28,10 @@ import { CustomDropdown } from '../common/CustomDropdown';
 import { PriorityBadge } from '../common/PriorityBadge';
 import { formatDate } from '../../utils/date';
 import { ConfirmDialog } from '../common/ConfirmDialog';
+import { useAuth } from '../../context/AuthContext';
 
 export const UsersView: React.FC = () => {
+  const { inviteMember } = useAuth();
   const {
     users,
     currentUser,
@@ -133,24 +135,31 @@ export const UsersView: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleCreateUser = (e: React.FormEvent) => {
+  const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim() || !newEmail.trim()) return;
 
+    const trimmedEmail = newEmail.trim().toLowerCase();
+    const trimmedName = newName.trim();
+    const trimmedTitle = newTitle.trim() || 'Team Member';
+
     addUser({
-      name: newName.trim(),
-      email: newEmail.trim(),
-      jobTitle: newTitle.trim() || 'Team Member',
+      name: trimmedName,
+      email: trimmedEmail,
+      jobTitle: trimmedTitle,
       role: newRole,
       avatar: newAvatar.trim() || `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 1000000)}?w=150&auto=format&fit=crop&q=80`,
     });
+
+    // Send invitation / password link via SMTP
+    await inviteMember(trimmedEmail, trimmedName, newRole, trimmedTitle);
 
     setNewName('');
     setNewEmail('');
     setNewTitle('');
     setNewAvatar('');
     setIsAddModalOpen(false);
-    showToast('New team member created successfully.');
+    showToast(`Added ${trimmedName} & sent account setup link to ${trimmedEmail}`);
   };
 
   const startEditUser = (user: User) => {

@@ -1,145 +1,224 @@
--- KanbanFlow PostgreSQL Schema for Supabase
+﻿-- ==============================================================================
+-- KANBANFLOW FULL DATABASE SCHEMA & AUTH TRIGGERS
+-- Paste this entire file into the Supabase SQL Editor and click 'Run'.
+-- ==============================================================================
+
 -- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+create extension if not exists "uuid-ossp";
 
--- 1. Profiles Table (linked to Supabase Auth auth.users)
-CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  full_name TEXT NOT NULL,
-  avatar_url TEXT,
-  job_title TEXT DEFAULT 'Product Lead',
-  role TEXT DEFAULT 'member',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+-- ------------------------------------------------------------------------------
+-- 1. PROFILES TABLE (Linked directly to auth.users)
+-- ------------------------------------------------------------------------------
+create table if not exists public.profiles (
+  id uuid references auth.users on delete cascade primary key,
+  full_name text not null,
+  email text not null unique,
+  avatar_url text default '',
+  role text not null default 'member' check (role in ('admin', 'member')),
+  job_title text default 'Team Member',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Trigger to auto-create profile on signup
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS \$\$
-BEGIN
-  INSERT INTO public.profiles (id, email, full_name, avatar_url, job_title, role)
-  VALUES (
+-- ------------------------------------------------------------------------------
+-- 2. AUTOMATIC FIRST-USER ADMIN TRIGGER FUNCTION
+-- Automatically makes the 1st registered user an 'admin', and others 'member'
+-- ------------------------------------------------------------------------------
+create or replace function public.handle_new_user()
+returns trigger as 
+declare
+  user_count integer;
+  assigned_role text;
+  user_name text;
+begin
+  -- Check existing profile count
+  select count(*) into user_count from public.profiles;
+
+  -- 1st user is automatically assigned 'admin', subsequent users get 'member' (or metadata role if provided)
+  if user_count = 0 then
+    assigned_role := 'admin';
+  else
+    assigned_role := coalesce(new.raw_user_meta_data->>'role', 'member');
+  end if;
+
+  user_name := coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1));
+
+  insert into public.profiles (id, full_name, email, role, job_title, avatar_url)
+  values (
     new.id,
+    user_name,
     new.email,
-    COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
-    COALESCE(new.raw_user_meta_data->>'avatar_url', ''),
-    COALESCE(new.raw_user_meta_data->>'job_title', 'Product Lead'),
-    COALESCE(new.raw_user_meta_data->>'role', 'member')
-  );
-  RETURN NEW;
-END;
-\$\$ LANGUAGE plpgsql SECURITY DEFINER;
+    assigned_role,
+    coalesce(new.raw_user_meta_data->>'job_title', 'Team Member'),
+    coalesce(new.raw_user_meta_data->>'avatar_url', '')
+  )
+  on conflict (id) do update set
+    full_name = excluded.full_name,
+    email = excluded.email,
+    avatar_url = excluded.avatar_url,
+    job_title = excluded.job_title,
+    updated_at = now();
 
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+  return new;
+end;
+ language plpgsql security definer;
 
--- 2. Workspaces Table
-CREATE TABLE IF NOT EXISTS public.workspaces (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name TEXT NOT NULL,
-  description TEXT,
-  owner_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  accent_color TEXT DEFAULT '#7c3bed',
-  created_at TIMESTAMPTZ DEFAULT NOW()
+-- Trigger to execute whenever a new auth user is created
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+-- ------------------------------------------------------------------------------
+-- 3. WORKSPACES TABLE
+-- ------------------------------------------------------------------------------
+create table if not exists public.workspaces (
+  id text primary key default ('ws-' || extract(epoch from now())::text),
+  name text not null,
+  description text default '',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 3. Workspace Members
-CREATE TABLE IF NOT EXISTS public.workspace_members (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  role TEXT DEFAULT 'member',
-  joined_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(workspace_id, user_id)
+-- Insert default workspace if not exists
+insert into public.workspaces (id, name, description)
+values ('ws-default', 'Acme Product Team', 'Collaborative engineering and product management workspace.')
+on conflict (id) do nothing;
+
+-- ------------------------------------------------------------------------------
+-- 4. BOARDS TABLE
+-- ------------------------------------------------------------------------------
+create table if not exists public.boards (
+  id text primary key,
+  workspace_id text references public.workspaces(id) on delete set null default 'ws-default',
+  title text not null,
+  description text default '',
+  color text default '#4f46e5',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 4. Boards Table
-CREATE TABLE IF NOT EXISTS public.boards (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  description TEXT,
-  color TEXT DEFAULT '#7c3bed',
-  created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+-- ------------------------------------------------------------------------------
+-- 5. COLUMNS TABLE
+-- ------------------------------------------------------------------------------
+create table if not exists public.columns (
+  id text primary key,
+  board_id text references public.boards(id) on delete cascade not null,
+  title text not null,
+  "order" integer not null default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 5. Columns Table
-CREATE TABLE IF NOT EXISTS public.columns (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  board_id UUID REFERENCES public.boards(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  "order" INTEGER NOT NULL DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+-- ------------------------------------------------------------------------------
+-- 6. TASKS TABLE
+-- ------------------------------------------------------------------------------
+create table if not exists public.tasks (
+  id text primary key,
+  board_id text references public.boards(id) on delete cascade not null,
+  column_id text references public.columns(id) on delete cascade not null,
+  title text not null,
+  description text default '',
+  assignee_id text,
+  due_date text,
+  priority text not null default 'medium' check (priority in ('low', 'medium', 'high', 'urgent')),
+  "order" integer not null default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 6. Tasks Table
-CREATE TABLE IF NOT EXISTS public.tasks (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  board_id UUID REFERENCES public.boards(id) ON DELETE CASCADE,
-  column_id UUID REFERENCES public.columns(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  description TEXT DEFAULT '',
-  priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
-  due_date DATE,
-  assignee_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
-  created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
-  "order" INTEGER NOT NULL DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+-- ------------------------------------------------------------------------------
+-- 7. TASK COMMENTS TABLE
+-- ------------------------------------------------------------------------------
+create table if not exists public.task_comments (
+  id text primary key,
+  task_id text references public.tasks(id) on delete cascade not null,
+  user_id text not null,
+  user_name text not null,
+  user_avatar text default '',
+  content text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 7. Notifications Table
-CREATE TABLE IF NOT EXISTS public.notifications (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  recipient_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  sender_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
-  sender_name TEXT NOT NULL,
-  sender_avatar TEXT,
-  task_id UUID REFERENCES public.tasks(id) ON DELETE CASCADE,
-  task_title TEXT,
-  board_id UUID REFERENCES public.boards(id) ON DELETE CASCADE,
-  type TEXT NOT NULL,
-  message TEXT NOT NULL,
-  is_read BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+-- ------------------------------------------------------------------------------
+-- 8. TASK ATTACHMENTS TABLE
+-- ------------------------------------------------------------------------------
+create table if not exists public.task_attachments (
+  id text primary key,
+  task_id text references public.tasks(id) on delete cascade not null,
+  name text not null,
+  size bigint not null default 0,
+  type text not null default 'application/octet-stream',
+  url text not null,
+  uploaded_by text not null,
+  uploaded_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 8. Activity Logs Table
-CREATE TABLE IF NOT EXISTS public.activity_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
-  user_name TEXT NOT NULL,
-  user_avatar TEXT,
-  action TEXT NOT NULL,
-  entity_title TEXT NOT NULL,
-  board_title TEXT,
-  details TEXT,
-  timestamp TIMESTAMPTZ DEFAULT NOW()
+-- ------------------------------------------------------------------------------
+-- 9. NOTIFICATIONS TABLE
+-- ------------------------------------------------------------------------------
+create table if not exists public.notifications (
+  id text primary key,
+  recipient_id text not null,
+  sender_id text not null,
+  sender_name text not null,
+  sender_avatar text default '',
+  task_id text,
+  task_title text,
+  board_id text,
+  type text not null default 'task_assigned',
+  message text not null,
+  is_read boolean not null default false,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Enable Row Level Security (RLS)
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.workspace_members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.boards ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.columns ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
+-- ------------------------------------------------------------------------------
+-- 10. ACTIVITY LOGS TABLE
+-- ------------------------------------------------------------------------------
+create table if not exists public.activity_logs (
+  id text primary key,
+  user_id text not null,
+  user_name text not null,
+  user_avatar text default '',
+  action text not null,
+  entity_title text not null,
+  board_title text,
+  details text,
+  timestamp timestamp with time zone default timezone('utc'::text, now()) not null
+);
 
--- Basic RLS Policies for authenticated users
-CREATE POLICY "Allow logged in users full access to profiles" ON public.profiles FOR ALL TO authenticated USING (true);
-CREATE POLICY "Allow logged in users full access to workspaces" ON public.workspaces FOR ALL TO authenticated USING (true);
-CREATE POLICY "Allow logged in users full access to workspace_members" ON public.workspace_members FOR ALL TO authenticated USING (true);
-CREATE POLICY "Allow logged in users full access to boards" ON public.boards FOR ALL TO authenticated USING (true);
-CREATE POLICY "Allow logged in users full access to columns" ON public.columns FOR ALL TO authenticated USING (true);
-CREATE POLICY "Allow logged in users full access to tasks" ON public.tasks FOR ALL TO authenticated USING (true);
-CREATE POLICY "Allow logged in users full access to notifications" ON public.notifications FOR ALL TO authenticated USING (true);
-CREATE POLICY "Allow logged in users full access to activity_logs" ON public.activity_logs FOR ALL TO authenticated USING (true);
+-- ------------------------------------------------------------------------------
+-- 11. ROW LEVEL SECURITY (RLS) POLICIES
+-- ------------------------------------------------------------------------------
+alter table public.profiles enable row level security;
+alter table public.workspaces enable row level security;
+alter table public.boards enable row level security;
+alter table public.columns enable row level security;
+alter table public.tasks enable row level security;
+alter table public.task_comments enable row level security;
+alter table public.task_attachments enable row level security;
+alter table public.notifications enable row level security;
+alter table public.activity_logs enable row level security;
 
+-- Authenticated users policies
+create policy "Allow authenticated read on profiles" on public.profiles for select using (auth.role() = 'authenticated');
+create policy "Allow profile self update" on public.profiles for update using (auth.uid() = id);
+
+create policy "Allow authenticated all on workspaces" on public.workspaces for all using (auth.role() = 'authenticated');
+create policy "Allow authenticated all on boards" on public.boards for all using (auth.role() = 'authenticated');
+create policy "Allow authenticated all on columns" on public.columns for all using (auth.role() = 'authenticated');
+create policy "Allow authenticated all on tasks" on public.tasks for all using (auth.role() = 'authenticated');
+create policy "Allow authenticated all on task_comments" on public.task_comments for all using (auth.role() = 'authenticated');
+create policy "Allow authenticated all on task_attachments" on public.task_attachments for all using (auth.role() = 'authenticated');
+create policy "Allow authenticated all on notifications" on public.notifications for all using (auth.role() = 'authenticated');
+create policy "Allow authenticated all on activity_logs" on public.activity_logs for all using (auth.role() = 'authenticated');
+
+-- ------------------------------------------------------------------------------
+-- 12. STORAGE BUCKETS
+-- ------------------------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+values ('attachments', 'attachments', true), ('avatars', 'avatars', true)
+on conflict (id) do update set public = true;
+
+create policy "Public Access to Attachments" on storage.objects for select using (bucket_id in ('attachments', 'avatars'));
+create policy "Authenticated Upload to Attachments" on storage.objects for insert with check (bucket_id in ('attachments', 'avatars') and auth.role() = 'authenticated');
+create policy "Authenticated Delete on Attachments" on storage.objects for delete using (bucket_id in ('attachments', 'avatars') and auth.role() = 'authenticated');

@@ -12,6 +12,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
   updatePassword: (newPassword: string) => Promise<{ error: any }>;
+  inviteMember: (email: string, fullName: string, role?: 'admin' | 'member', jobTitle?: string) => Promise<{ error: any; emailSent: boolean }>;
 }
 
 const LOCAL_STORAGE_USER_KEY = 'kanbanflow_auth_user';
@@ -197,6 +198,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { error: null };
   };
 
+  const inviteMember = async (
+    email: string,
+    fullName: string,
+    role: 'admin' | 'member' = 'member',
+    jobTitle: string = 'Team Member'
+  ): Promise<{ error: any; emailSent: boolean }> => {
+    if (isSupabaseConfigured && supabase) {
+      // Trigger a password reset / account setup email via Supabase Auth + configured SMTP
+      const redirectUrl = `${window.location.origin}/#type=recovery`;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+      });
+      return { error, emailSent: !error };
+    }
+    return { error: null, emailSent: true };
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -209,6 +227,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         signOut,
         resetPassword,
         updatePassword,
+        inviteMember,
       }}
     >
       {children}
