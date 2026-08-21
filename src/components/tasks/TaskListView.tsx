@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { PriorityBadge } from '../common/PriorityBadge';
 import { UserAvatar } from '../common/UserAvatar';
+import { CustomDropdown } from '../common/CustomDropdown';
 import { formatDate, isOverdue } from '../../utils/date';
 
 export const TaskListView: React.FC = () => {
@@ -169,38 +170,37 @@ export const TaskListView: React.FC = () => {
 
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Board Selector */}
-          <select
+          <CustomDropdown
+            size="sm"
             value={quickBoardId}
-            onChange={(e) => setQuickBoardId(e.target.value)}
-            className="px-2.5 py-2 rounded-lg border border-slate-200 text-xs font-medium bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            {boards.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.title}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setQuickBoardId(val)}
+            options={boards.map((b) => ({
+              value: b.id,
+              label: b.title,
+              colorDot: b.color || '#7839e6',
+            }))}
+            className="min-w-[140px]"
+          />
 
           {/* Assignee Selector */}
-          <select
+          <CustomDropdown
+            size="sm"
             value={quickAssigneeId}
-            onChange={(e) => setQuickAssigneeId(e.target.value)}
-            className="px-2.5 py-2 rounded-lg border border-slate-200 text-xs font-medium bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="">Assignee (None)</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setQuickAssigneeId(val)}
+            placeholder="Assignee (None)"
+            options={[
+              { value: '', label: 'Assignee (None)' },
+              ...users.map((u) => ({ value: u.id, label: u.name })),
+            ]}
+            className="min-w-[140px]"
+          />
 
           {/* Due Date */}
           <input
             type="date"
             value={quickDueDate}
             onChange={(e) => setQuickDueDate(e.target.value)}
-            className="px-2.5 py-2 rounded-lg border border-slate-200 text-xs font-medium bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
 
           <button
@@ -230,59 +230,60 @@ export const TaskListView: React.FC = () => {
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Filter Board */}
-          <select
+          <CustomDropdown
+            size="sm"
             value={selectedBoardFilter}
-            onChange={(e) => setSelectedBoardFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-slate-200 text-xs font-medium bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">All Boards</option>
-            {boards.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.title}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setSelectedBoardFilter(val)}
+            options={[
+              { value: 'all', label: 'All Boards' },
+              ...boards.map((b) => ({
+                value: b.id,
+                label: b.title,
+                colorDot: b.color || '#7839e6',
+              })),
+            ]}
+            className="min-w-[130px]"
+          />
 
           {/* Filter Status */}
-          <select
+          <CustomDropdown
+            size="sm"
             value={selectedStatusFilter}
-            onChange={(e) => setSelectedStatusFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-slate-200 text-xs font-medium bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="done">Completed</option>
-          </select>
+            onChange={(val) => setSelectedStatusFilter(val)}
+            options={[
+              { value: 'all', label: 'All Statuses' },
+              { value: 'pending', label: 'Pending' },
+              { value: 'done', label: 'Completed' },
+            ]}
+            className="min-w-[130px]"
+          />
 
           {/* Filter Assignee */}
-          <select
+          <CustomDropdown
+            size="sm"
             value={selectedAssigneeFilter}
-            onChange={(e) => setSelectedAssigneeFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-slate-200 text-xs font-medium bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">All Assignees</option>
-            <option value="unassigned">Unassigned</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setSelectedAssigneeFilter(val)}
+            options={[
+              { value: 'all', label: 'All Assignees' },
+              { value: 'unassigned', label: 'Unassigned' },
+              ...users.map((u) => ({ value: u.id, label: u.name })),
+            ]}
+            className="min-w-[140px]"
+          />
 
           {/* Sort By */}
-          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
-            <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 ml-1" />
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="bg-transparent text-xs font-medium text-slate-700 focus:outline-none py-1"
-            >
-              <option value="createdAt">Date Created</option>
-              <option value="dueDate">Due Date</option>
-              <option value="title">Name</option>
-              <option value="priority">Priority</option>
-            </select>
-          </div>
+          <CustomDropdown
+            size="sm"
+            value={sortBy}
+            onChange={(val) => setSortBy(val as any)}
+            options={[
+              { value: 'createdAt', label: 'Date Created' },
+              { value: 'dueDate', label: 'Due Date' },
+              { value: 'title', label: 'Name' },
+              { value: 'priority', label: 'Priority' },
+            ]}
+            className="min-w-[130px]"
+          />
         </div>
       </div>
 

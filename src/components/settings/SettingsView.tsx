@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
+import { CustomDropdown } from '../common/CustomDropdown';
 
 export const SettingsView: React.FC = () => {
   const {
@@ -196,14 +197,16 @@ export const SettingsView: React.FC = () => {
                 onChange={(e) => setNewMemberTitle(e.target.value)}
                 className="px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
-              <select
+              <CustomDropdown
+                size="sm"
                 value={newMemberRole}
-                onChange={(e) => setNewMemberRole(e.target.value as any)}
-                className="px-3 py-2 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="member">Member</option>
-                <option value="admin">Admin</option>
-              </select>
+                onChange={(val) => setNewMemberRole(val as any)}
+                options={[
+                  { value: 'member', label: 'Member' },
+                  { value: 'admin', label: 'Admin' },
+                ]}
+                className="w-full"
+              />
             </div>
             <div className="flex justify-end gap-2">
               <button

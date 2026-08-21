@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
+import { CustomDropdown } from '../common/CustomDropdown';
 
 export const BoardDetailView: React.FC = () => {
   const {
@@ -155,19 +156,17 @@ export const BoardDetailView: React.FC = () => {
             </div>
 
             {/* Assignee Filter Dropdown */}
-            <select
+            <CustomDropdown
+              size="sm"
               value={filterAssigneeId}
-              onChange={(e) => setFilterAssigneeId(e.target.value)}
-              className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs bg-white text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="all">All Members</option>
-              <option value="unassigned">Unassigned</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setFilterAssigneeId(val)}
+              options={[
+                { value: 'all', label: 'All Members' },
+                { value: 'unassigned', label: 'Unassigned' },
+                ...users.map((u) => ({ value: u.id, label: u.name })),
+              ]}
+              className="min-w-[130px]"
+            />
 
             {/* Add Task Button */}
             <button

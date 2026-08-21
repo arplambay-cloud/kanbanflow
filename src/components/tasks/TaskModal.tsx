@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { Priority } from '../../types';
 import { X, Calendar, User, Layout, Tag, Trash2, CheckCircle2 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
+import { CustomDropdown } from '../common/CustomDropdown';
 
 export const TaskModal: React.FC = () => {
   const {
@@ -187,17 +188,16 @@ export const TaskModal: React.FC = () => {
                   <Layout className="w-3.5 h-3.5 text-slate-400" /> Board
                 </span>
               </label>
-              <select
+              <CustomDropdown
                 value={selectedBoardId}
-                onChange={(e) => handleBoardChange(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium"
-              >
-                {boards.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.title}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => handleBoardChange(val)}
+                options={boards.map((b) => ({
+                  value: b.id,
+                  label: b.title,
+                  colorDot: b.color || '#7839e6',
+                }))}
+                className="w-full"
+              />
             </div>
 
             <div>
@@ -206,17 +206,15 @@ export const TaskModal: React.FC = () => {
                   <CheckCircle2 className="w-3.5 h-3.5 text-slate-400" /> Column / Status
                 </span>
               </label>
-              <select
+              <CustomDropdown
                 value={selectedColumnId}
-                onChange={(e) => setSelectedColumnId(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium"
-              >
-                {availableColumns.map((col) => (
-                  <option key={col.id} value={col.id}>
-                    {col.title}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setSelectedColumnId(val)}
+                options={availableColumns.map((col) => ({
+                  value: col.id,
+                  label: col.title,
+                }))}
+                className="w-full"
+              />
             </div>
           </div>
 
@@ -228,18 +226,20 @@ export const TaskModal: React.FC = () => {
                   <User className="w-3.5 h-3.5 text-slate-400" /> Assignee
                 </span>
               </label>
-              <select
+              <CustomDropdown
                 value={assigneeId}
-                onChange={(e) => setAssigneeId(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-medium"
-              >
-                <option value="">Unassigned</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name} ({u.jobTitle || u.role})
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setAssigneeId(val)}
+                placeholder="Unassigned"
+                options={[
+                  { value: '', label: 'Unassigned' },
+                  ...users.map((u) => ({
+                    value: u.id,
+                    label: u.name,
+                    sublabel: u.jobTitle || u.role,
+                  })),
+                ]}
+                className="w-full"
+              />
             </div>
 
             <div>
