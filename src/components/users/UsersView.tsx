@@ -19,9 +19,14 @@ import {
   Upload,
   Layers,
   Sparkles,
+  Eye,
+  Calendar,
+  ArrowUpRight,
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
 import { CustomDropdown } from '../common/CustomDropdown';
+import { PriorityBadge } from '../common/PriorityBadge';
+import { formatDate } from '../../utils/date';
 
 export const UsersView: React.FC = () => {
   const {
@@ -32,11 +37,16 @@ export const UsersView: React.FC = () => {
     deleteUser,
     tasks,
     columns,
+    boards,
+    openTaskModal,
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // View User Profile Modal state
+  const [viewingUser, setViewingUser] = useState<User | null>(null);
 
   // Add User Modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -301,6 +311,15 @@ export const UsersView: React.FC = () => {
                       >
                         {user.role}
                       </span>
+
+                      {/* View Profile Button */}
+                      <button
+                        onClick={() => setViewingUser(user)}
+                        className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                        title="View profile details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
 
                       {/* Edit Button */}
                       <button
@@ -618,6 +637,209 @@ export const UsersView: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 3. VIEW USER PROFILE MODAL */}
+      {/* ========================================================================= */}
+      {viewingUser && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in"
+          onClick={() => setViewingUser(null)}
+        >
+          <div
+            className="w-full max-w-lg bg-white rounded-2xl shadow-floating border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                <UserIcon className="w-4 h-4 text-indigo-600" />
+                <h3 className="font-bold text-slate-800 text-base">User Profile</h3>
+              </div>
+              <button
+                onClick={() => setViewingUser(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Profile Content Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              {/* Profile Card Header */}
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <UserAvatar user={viewingUser} size="xl" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <h2 className="text-lg font-bold text-slate-900 truncate">
+                      {viewingUser.name}
+                    </h2>
+                    {viewingUser.id === currentUser.id && (
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold bg-indigo-100 text-indigo-700 rounded">
+                        You
+                      </span>
+                    )}
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        viewingUser.role === 'admin'
+                          ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                          : 'bg-slate-100 text-slate-600 border border-slate-200/80'
+                      }`}
+                    >
+                      {viewingUser.role}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-600 font-medium flex items-center gap-1.5 mb-1">
+                    <Briefcase className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span>{viewingUser.jobTitle || 'Team Member'}</span>
+                  </p>
+
+                  <p className="text-xs text-slate-500 flex items-center gap-1.5 truncate">
+                    <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="truncate">{viewingUser.email}</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Workload Stats */}
+              {(() => {
+                const userTasks = tasks.filter((t) => t.assigneeId === viewingUser.id);
+                const userCompleted = userTasks.filter((t) => doneColumnIds.has(t.columnId));
+                const userPending = userTasks.filter((t) => !doneColumnIds.has(t.columnId));
+
+                return (
+                  <>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl text-center">
+                        <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                          Total Tasks
+                        </span>
+                        <span className="text-xl font-extrabold text-slate-800 mt-0.5 block">
+                          {userTasks.length}
+                        </span>
+                      </div>
+                      <div className="p-3 bg-indigo-50/50 border border-indigo-100 rounded-xl text-center">
+                        <span className="block text-[10px] font-bold text-indigo-600 uppercase tracking-wider">
+                          Active
+                        </span>
+                        <span className="text-xl font-extrabold text-indigo-700 mt-0.5 block">
+                          {userPending.length}
+                        </span>
+                      </div>
+                      <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl text-center">
+                        <span className="block text-[10px] font-bold text-emerald-600 uppercase tracking-wider">
+                          Completed
+                        </span>
+                        <span className="text-xl font-extrabold text-emerald-700 mt-0.5 block">
+                          {userCompleted.length}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Assigned Tasks List */}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                          Assigned Tasks ({userTasks.length})
+                        </h4>
+                      </div>
+
+                      {userTasks.length === 0 ? (
+                        <div className="p-6 text-center bg-slate-50 border border-slate-200/80 rounded-xl">
+                          <p className="text-xs text-slate-400 italic">
+                            No tasks currently assigned to {viewingUser.name}.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                          {userTasks.map((task) => {
+                            const board = boards.find((b) => b.id === task.boardId);
+                            const column = columns.find((c) => c.id === task.columnId);
+                            const isDone = doneColumnIds.has(task.columnId);
+
+                            return (
+                              <div
+                                key={task.id}
+                                onClick={() => {
+                                  setViewingUser(null);
+                                  openTaskModal(task);
+                                }}
+                                className="p-2.5 bg-white border border-slate-200 hover:border-indigo-300 rounded-xl flex items-center justify-between gap-3 cursor-pointer group/task transition-all"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className={`text-xs font-semibold text-slate-900 group-hover/task:text-indigo-600 transition-colors truncate ${
+                                        isDone ? 'line-through text-slate-400' : ''
+                                      }`}
+                                    >
+                                      {task.title}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400">
+                                    {board && (
+                                      <span className="flex items-center gap-1">
+                                        <span
+                                          className="w-1.5 h-1.5 rounded-full"
+                                          style={{ backgroundColor: board.color || '#7c3bed' }}
+                                        />
+                                        <span>{board.title}</span>
+                                      </span>
+                                    )}
+                                    {column && (
+                                      <span>• {column.title}</span>
+                                    )}
+                                    {task.dueDate && (
+                                      <span className="flex items-center gap-0.5">
+                                        <Calendar className="w-2.5 h-2.5" />
+                                        <span>{formatDate(task.dueDate)}</span>
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <PriorityBadge priority={task.priority} size="sm" showIcon={false} />
+                                  <ArrowUpRight className="w-3.5 h-3.5 text-slate-300 group-hover/task:text-indigo-600 transition-colors" />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 bg-slate-50/50">
+              <button
+                type="button"
+                onClick={() => setViewingUser(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Close
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const u = viewingUser;
+                  setViewingUser(null);
+                  startEditUser(u);
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+                <span>Edit Profile</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
