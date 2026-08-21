@@ -38,13 +38,6 @@ export const TaskListView: React.FC = () => {
   const [sortBy, setSortBy] = useState<'dueDate' | 'title' | 'priority' | 'createdAt'>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // Quick inline add task state
-  const [quickTitle, setQuickTitle] = useState('');
-  const [quickBoardId, setQuickBoardId] = useState(boards[0]?.id || '');
-  const [quickAssigneeId, setQuickAssigneeId] = useState('');
-  const [quickDueDate, setQuickDueDate] = useState('');
-  const [quickPriority, setQuickPriority] = useState<Priority>('medium');
-
   const doneColumnIds = new Set(
     columns
       .filter((c) => c.title.toLowerCase().includes('done'))
@@ -105,32 +98,6 @@ export const TaskListView: React.FC = () => {
     return sortOrder === 'asc' ? comparison : -comparison;
   });
 
-  // Quick inline add handler
-  const handleQuickAdd = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!quickTitle.trim()) return;
-
-    const targetBoardId = quickBoardId || boards[0]?.id;
-    const boardCols = columns.filter((c) => c.boardId === targetBoardId);
-    const targetColId = boardCols[0]?.id;
-
-    if (!targetColId) return;
-
-    createTask({
-      title: quickTitle.trim(),
-      description: '',
-      boardId: targetBoardId,
-      columnId: targetColId,
-      assigneeId: quickAssigneeId || undefined,
-      dueDate: quickDueDate || undefined,
-      priority: quickPriority,
-    });
-
-    setQuickTitle('');
-    setQuickDueDate('');
-    setQuickAssigneeId('');
-  };
-
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Page Header */}
@@ -152,66 +119,6 @@ export const TaskListView: React.FC = () => {
           <span>New Task</span>
         </button>
       </div>
-
-      {/* Quick Add Inline Bar */}
-      <form
-        onSubmit={handleQuickAdd}
-        className="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200 shadow-subtle flex flex-col md:flex-row items-stretch md:items-center gap-3"
-      >
-        <div className="flex-1 min-w-[200px]">
-          <input
-            type="text"
-            placeholder="+ Quick add a new task title and press Enter..."
-            value={quickTitle}
-            onChange={(e) => setQuickTitle(e.target.value)}
-            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-slate-400 bg-slate-50 focus:bg-white transition-all"
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Board Selector */}
-          <CustomDropdown
-            size="sm"
-            value={quickBoardId}
-            onChange={(val) => setQuickBoardId(val)}
-            options={boards.map((b) => ({
-              value: b.id,
-              label: b.title,
-              colorDot: b.color || '#7c3bed',
-            }))}
-            className="min-w-[140px]"
-          />
-
-          {/* Assignee Selector */}
-          <CustomDropdown
-            size="sm"
-            value={quickAssigneeId}
-            onChange={(val) => setQuickAssigneeId(val)}
-            placeholder="Assignee (None)"
-            options={[
-              { value: '', label: 'Assignee (None)' },
-              ...users.map((u) => ({ value: u.id, label: u.name })),
-            ]}
-            className="min-w-[140px]"
-          />
-
-          {/* Due Date */}
-          <input
-            type="date"
-            value={quickDueDate}
-            onChange={(e) => setQuickDueDate(e.target.value)}
-            className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-
-          <button
-            type="submit"
-            disabled={!quickTitle.trim()}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-xs font-semibold shadow-sm transition-all"
-          >
-            Add Task
-          </button>
-        </div>
-      </form>
 
       {/* Filter and Search Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-subtle flex flex-col md:flex-row md:items-center justify-between gap-3">
