@@ -506,7 +506,7 @@ export const TaskModal: React.FC = () => {
                               href={att.url}
                               download={att.name}
                               target="_blank"
-                              rel="noreferrer"
+                              rel="noopener noreferrer"
                               className="p-1 text-slate-400 hover:text-indigo-600 rounded"
                               title="Download"
                             >
