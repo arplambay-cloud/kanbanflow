@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { Sidebar } from './components/layout/Sidebar';
@@ -12,61 +12,30 @@ import { UsersView } from './components/users/UsersView';
 import { ProfileView } from './components/profile/ProfileView';
 import { SettingsView } from './components/settings/SettingsView';
 import { TaskModal } from './components/tasks/TaskModal';
-import { SignInView } from './components/auth/SignInView';
-import { SignUpView } from './components/auth/SignUpView';
-import { ForgotPasswordModal } from './components/auth/ForgotPasswordModal';
-import { ResetPasswordView } from './components/auth/ResetPasswordView';
+import { ClerkAuthView } from './components/auth/ClerkAuthView';
 import { Kanban, Loader2 } from 'lucide-react';
 
 export const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [authView, setAuthView] = useState<'signin' | 'signup' | 'reset-password'>('signin');
-  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
-
-  // Check if URL contains reset password recovery tokens
-  useEffect(() => {
-    if (window.location.hash.includes('type=recovery')) {
-      setAuthView('reset-password');
-    }
-  }, []);
 
   if (loading) {
     return (
-      <div className="min-h-screen w-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-        <div className="w-12 h-12 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md mb-3 animate-pulse">
+      <div className="min-h-screen w-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 text-white flex items-center justify-center shadow-lg mb-3 animate-pulse">
           <Kanban className="w-6 h-6" />
         </div>
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-          <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+          <Loader2 className="w-4 h-4 animate-spin text-brand-500" />
           <span>Loading workspace...</span>
         </div>
       </div>
     );
   }
 
-  // If not logged in, render authentication screens
+  // If not logged in, render Clerk authentication screen
   if (!user) {
-    return (
-      <>
-        {authView === 'signin' && (
-          <SignInView
-            onSwitchToSignUp={() => setAuthView('signup')}
-            onForgotPassword={() => setIsForgotPasswordOpen(true)}
-          />
-        )}
-        {authView === 'signup' && (
-          <SignUpView onSwitchToSignIn={() => setAuthView('signin')} />
-        )}
-        {authView === 'reset-password' && (
-          <ResetPasswordView onSuccess={() => setAuthView('signin')} />
-        )}
-        <ForgotPasswordModal
-          isOpen={isForgotPasswordOpen}
-          onClose={() => setIsForgotPasswordOpen(false)}
-        />
-      </>
-    );
+    return <ClerkAuthView />;
   }
 
   return (

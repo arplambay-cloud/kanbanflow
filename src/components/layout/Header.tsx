@@ -10,6 +10,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
+import { UserButton } from '@clerk/react';
 import { timeAgo } from '../../utils/date';
 
 interface HeaderProps {
@@ -220,14 +221,20 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
           )}
         </div>
 
-        {/* Profile Avatar Quick Button */}
-        <button
-          onClick={() => setActivePage('profile')}
-          className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-          title="Go to Profile"
-        >
-          <UserAvatar user={currentUser} size="sm" />
-        </button>
+        {/* Profile Avatar Quick Button & Clerk UserButton */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActivePage('profile')}
+            className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+            title="Go to Profile"
+          >
+            <UserAvatar user={currentUser} size="sm" />
+          </button>
+
+          <div className="pl-1 border-l border-slate-200 flex items-center">
+            <UserButton />
+          </div>
+        </div>
       </div>
     </header>
   );
