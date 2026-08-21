@@ -21,10 +21,11 @@ import { UserAvatar } from '../common/UserAvatar';
 import { CustomDropdown } from '../common/CustomDropdown';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
-import { OrganizationProfile } from '@clerk/react';
+import { OrganizationProfile, CreateOrganization, useOrganization } from '@clerk/react';
 import { User } from '../../types';
 
 export const SettingsView: React.FC = () => {
+  const { organization } = useOrganization();
   const { inviteMember } = useAuth();
   const {
     workspace,
@@ -274,7 +275,17 @@ export const SettingsView: React.FC = () => {
                 </button>
               </div>
               <div className="p-4 overflow-y-auto max-h-[75vh] flex justify-center">
-                <OrganizationProfile />
+                {organization ? (
+                  <OrganizationProfile />
+                ) : (
+                  <div className="flex flex-col items-center p-4">
+                    <h4 className="text-sm font-bold text-slate-800 mb-1">Create Workspace Organization</h4>
+                    <p className="text-xs text-slate-500 mb-4 text-center max-w-sm">
+                      Create your organization below to start emailing invitation links directly to your team members.
+                    </p>
+                    <CreateOrganization />
+                  </div>
+                )}
               </div>
             </div>
           </div>
