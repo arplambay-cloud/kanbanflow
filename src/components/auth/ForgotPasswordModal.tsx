@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { X, Mail, AlertCircle, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
 
@@ -96,7 +96,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                   placeholder="you@acme.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-slate-200 text-xs font-medium bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-slate-200 text-xs font-medium bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 transition-all"
                 />
               </div>
             </div>
