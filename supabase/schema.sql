@@ -25,7 +25,7 @@ create table if not exists public.profiles (
 -- Automatically makes the 1st registered user an 'admin', and others 'member'
 -- ------------------------------------------------------------------------------
 create or replace function public.handle_new_user()
-returns trigger as 
+returns trigger as $$
 declare
   user_count integer;
   assigned_role text;
@@ -61,7 +61,7 @@ begin
 
   return new;
 end;
- language plpgsql security definer;
+$$ language plpgsql security definer;
 
 -- Trigger to execute whenever a new auth user is created
 drop trigger if exists on_auth_user_created on auth.users;
