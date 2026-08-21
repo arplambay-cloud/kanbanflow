@@ -15,6 +15,7 @@ import {
   Mail,
   Briefcase,
   X,
+  KeyRound,
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
 import { CustomDropdown } from '../common/CustomDropdown';
@@ -377,6 +378,25 @@ export const SettingsView: React.FC = () => {
                     ]}
                     className="w-full"
                   />
+                </div>
+
+                {/* Password Recovery Action */}
+                <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between gap-3">
+                  <div>
+                    <span className="block text-xs font-bold text-slate-800">Password Reset</span>
+                    <span className="text-[11px] text-slate-500">Send password recovery link to user's email</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await inviteMember(editEmail.trim(), editName.trim(), editRole, editTitle.trim());
+                      alert(`Password setup link sent to ${editEmail.trim()}`);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors cursor-pointer shadow-xs"
+                  >
+                    <KeyRound className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Send Reset Link</span>
+                  </button>
                 </div>
 
                 <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
