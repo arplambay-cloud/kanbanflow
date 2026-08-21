@@ -60,6 +60,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
         return 'All Tasks';
       case 'notifications':
         return 'Notifications';
+      case 'users':
+        return 'Team Members';
       case 'profile':
         return 'My Profile';
       case 'settings':

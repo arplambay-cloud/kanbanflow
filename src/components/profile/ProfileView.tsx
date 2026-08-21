@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   User as UserIcon,
@@ -41,6 +41,16 @@ export const ProfileView: React.FC = () => {
   const [avatar, setAvatar] = useState(currentUser.avatar || '');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Synchronize with currentUser when not actively editing
+  useEffect(() => {
+    if (!isEditing) {
+      setName(currentUser.name);
+      setEmail(currentUser.email);
+      setJobTitle(currentUser.jobTitle || '');
+      setAvatar(currentUser.avatar || '');
+    }
+  }, [currentUser, isEditing]);
 
   const doneColumnIds = new Set(
     columns

@@ -1,7 +1,15 @@
+export function parseLocalDate(dateString: string): Date {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date(dateString);
+}
+
 export function formatDate(dateString?: string): string {
   if (!dateString) return '';
   try {
-    const date = new Date(dateString);
+    const date = parseLocalDate(dateString);
     if (isNaN(date.getTime())) return dateString;
 
     const today = new Date();
@@ -40,7 +48,7 @@ export function formatDate(dateString?: string): string {
 
 export function isOverdue(dateString?: string): boolean {
   if (!dateString) return false;
-  const target = new Date(dateString);
+  const target = parseLocalDate(dateString);
   const now = new Date();
   // Strip time for clean day comparison
   target.setHours(23, 59, 59, 999);
