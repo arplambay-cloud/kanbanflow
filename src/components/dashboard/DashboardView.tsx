@@ -60,23 +60,23 @@ export const DashboardView: React.FC = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
+      <div className="bg-gradient-to-r from-indigo-50/90 via-white to-indigo-50/40 rounded-xl p-6 sm:p-8 text-slate-900 border border-indigo-100/80 shadow-subtle relative overflow-hidden">
         {/* Subtle decorative background shapes */}
-        <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute right-32 bottom-0 translate-y-12 w-48 h-48 bg-violet-500/20 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-32 bottom-0 translate-y-12 w-48 h-48 bg-indigo-400/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-indigo-200 text-xs font-medium backdrop-blur-sm mb-3">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100/80 text-indigo-700 text-xs font-semibold mb-3 border border-indigo-200/60">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>{workspace.name}</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
               Welcome back, {currentUser.name.split(' ')[0]}! 👋
             </h2>
-            <p className="text-xs sm:text-sm text-indigo-200 mt-1 max-w-xl">
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-xl">
               You have{' '}
-              <span className="font-semibold text-white">
+              <span className="font-semibold text-slate-900">
                 {myPendingTasks.length} pending task
                 {myPendingTasks.length === 1 ? '' : 's'}
               </span>{' '}
@@ -87,16 +87,16 @@ export const DashboardView: React.FC = () => {
           <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={() => openTaskModal()}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-indigo-900 hover:bg-indigo-50 rounded-lg font-semibold text-xs sm:text-sm shadow-md transition-all active:scale-95"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg font-semibold text-xs sm:text-sm shadow-sm transition-all active:scale-95"
             >
-              <Plus className="w-4 h-4 text-indigo-600" />
+              <Plus className="w-4 h-4 text-white" />
               <span>Create Task</span>
             </button>
             <button
               onClick={() => setActivePage('boards')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-700/60 hover:bg-indigo-700 text-white rounded-lg font-semibold text-xs sm:text-sm border border-indigo-500/40 backdrop-blur-sm transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 rounded-lg font-semibold text-xs sm:text-sm border border-slate-200 shadow-subtle transition-all"
             >
-              <Kanban className="w-4 h-4" />
+              <Kanban className="w-4 h-4 text-indigo-600" />
               <span>View Boards</span>
             </button>
           </div>
@@ -360,7 +360,7 @@ export const DashboardView: React.FC = () => {
                       <div className="flex items-center gap-2 min-w-0">
                         <span
                           className="w-2.5 h-2.5 rounded-md shrink-0"
-                          style={{ backgroundColor: board.color || '#6366f1' }}
+                          style={{ backgroundColor: board.color || '#7839e6' }}
                         />
                         <span className="font-semibold text-slate-800 text-xs truncate">
                           {board.title}

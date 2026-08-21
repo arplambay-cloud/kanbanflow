@@ -206,7 +206,7 @@ export const TaskListView: React.FC = () => {
           <button
             type="submit"
             disabled={!quickTitle.trim()}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-xs font-semibold shadow-sm transition-all"
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-xs font-semibold shadow-sm transition-all"
           >
             Add Task
           </button>
@@ -382,7 +382,7 @@ export const TaskListView: React.FC = () => {
                         >
                           <span
                             className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: board?.color || '#6366f1' }}
+                            style={{ backgroundColor: board?.color || '#7839e6' }}
                           />
                           <span>{board?.title || 'Board'}</span>
                         </button>

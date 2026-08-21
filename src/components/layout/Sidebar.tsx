@@ -68,29 +68,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-40 w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-40 w-64 bg-white text-slate-700 flex flex-col border-r border-slate-200 transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Workspace Brand Header */}
-        <div className="p-4 border-b border-slate-800/80 flex items-center justify-between">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-950 shrink-0 font-bold text-lg">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-indigo-100 shrink-0 font-bold text-lg">
               <Kanban className="w-5 h-5 text-white" />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="font-semibold text-white text-sm tracking-tight truncate">
+              <span className="font-bold text-slate-900 text-sm tracking-tight truncate">
                 {workspace.name}
               </span>
-              <span className="text-[11px] text-slate-400 font-medium flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                 Workspace
               </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 lg:hidden"
+            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 lg:hidden"
           >
             <X className="w-5 h-5" />
           </button>
@@ -103,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               openTaskModal();
               onClose();
             }}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-lg font-medium text-xs shadow-sm hover:shadow-indigo-900/40 transition-all group"
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg font-semibold text-xs shadow-sm hover:shadow transition-all group"
           >
             <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" />
             <span>Create New Task</span>
@@ -127,14 +127,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 onClick={() => handleNavClick(item.id)}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
                   isActive
-                    ? 'bg-slate-800 text-white shadow-sm font-semibold'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                    ? 'bg-indigo-50 text-indigo-700 shadow-xs font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <Icon
                     className={`w-4 h-4 ${
-                      isActive ? 'text-indigo-400' : 'text-slate-400'
+                      isActive ? 'text-indigo-600' : 'text-slate-400'
                     }`}
                   />
                   <span>{item.label}</span>
@@ -160,7 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   setActivePage('boards');
                   onClose();
                 }}
-                className="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium"
+                className="text-[11px] text-indigo-600 hover:text-indigo-700 font-medium"
               >
                 View all
               </button>
@@ -178,13 +178,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                     }}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors text-left truncate ${
                       isCurrent
-                        ? 'bg-slate-800 text-white font-semibold'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                        ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                     }`}
                   >
                     <span
                       className="w-2.5 h-2.5 rounded-md shrink-0"
-                      style={{ backgroundColor: b.color || '#6366f1' }}
+                      style={{ backgroundColor: b.color || '#7839e6' }}
                     />
                     <span className="truncate">{b.title}</span>
                   </button>
@@ -195,13 +195,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </nav>
 
         {/* User Account Switcher */}
-        <div className="p-3 border-t border-slate-800 bg-slate-950/40 relative">
+        <div className="p-3 border-t border-slate-100 bg-slate-50/50 relative">
           {/* User Switcher Dropdown */}
           {isUserMenuOpen && (
-            <div className="absolute bottom-full left-3 right-3 mb-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl p-2 z-50 animate-fade-in">
-              <div className="px-2 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-700/60 flex items-center justify-between">
+            <div className="absolute bottom-full left-3 right-3 mb-2 bg-white border border-slate-200 rounded-xl shadow-floating p-2 z-50 animate-fade-in">
+              <div className="px-2 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 flex items-center justify-between">
                 <span>Switch Team Member</span>
-                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
               </div>
               <div className="mt-1 space-y-1 max-h-48 overflow-y-auto">
                 {users.map((user) => (
@@ -213,8 +213,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                     }}
                     className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
                       user.id === currentUser.id
-                        ? 'bg-indigo-600/30 text-white border border-indigo-500/40'
-                        : 'text-slate-300 hover:bg-slate-700/60'
+                        ? 'bg-indigo-50 text-indigo-900 border border-indigo-200'
+                        : 'text-slate-700 hover:bg-slate-50'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -229,7 +229,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                       </div>
                     </div>
                     {user.id === currentUser.id && (
-                      <span className="text-[10px] bg-indigo-500/30 text-indigo-300 px-1.5 py-0.5 rounded font-medium">
+                      <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-medium">
                         Active
                       </span>
                     )}
@@ -241,12 +241,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
           <button
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-            className="w-full flex items-center justify-between p-2 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-left transition-all border border-slate-700/40 group"
+            className="w-full flex items-center justify-between p-2 rounded-lg bg-white hover:bg-slate-100/80 text-left transition-all border border-slate-200 shadow-subtle group"
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <UserAvatar user={currentUser} size="sm" />
               <div className="flex flex-col min-w-0">
-                <span className="text-xs font-semibold text-white truncate">
+                <span className="text-xs font-semibold text-slate-900 truncate">
                   {currentUser.name}
                 </span>
                 <span className="text-[10px] text-slate-400 truncate">
@@ -255,7 +255,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               </div>
             </div>
             <ChevronDown
-              className={`w-4 h-4 text-slate-400 group-hover:text-white transition-transform ${
+              className={`w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-transform ${
                 isUserMenuOpen ? 'rotate-180' : ''
               }`}
             />

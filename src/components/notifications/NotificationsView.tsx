@@ -100,7 +100,7 @@ export const NotificationsView: React.FC = () => {
           onClick={() => setFilter('all')}
           className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
             filter === 'all'
-              ? 'bg-slate-900 text-white shadow-sm'
+              ? 'bg-indigo-600 text-white shadow-sm'
               : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
           }`}
         >
@@ -110,7 +110,7 @@ export const NotificationsView: React.FC = () => {
           onClick={() => setFilter('unread')}
           className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
             filter === 'unread'
-              ? 'bg-slate-900 text-white shadow-sm'
+              ? 'bg-indigo-600 text-white shadow-sm'
               : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
           }`}
         >
