@@ -153,9 +153,23 @@ export const TaskModal: React.FC = () => {
   };
 
   const handleDelete = () => {
-    if (task && window.confirm('Are you sure you want to delete this task?')) {
+    if (task && window.confirm(`Are you sure you want to delete "${task.title}"?`)) {
       deleteTask(task.id);
       closeTaskModal();
+    }
+  };
+
+  const handleDeleteAttachment = (attachmentId: string, attachmentName: string) => {
+    if (!task) return;
+    if (window.confirm(`Are you sure you want to delete attachment "${attachmentName}"? This cannot be undone.`)) {
+      deleteAttachment(task.id, attachmentId);
+    }
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    if (!task) return;
+    if (window.confirm('Are you sure you want to delete this comment?')) {
+      deleteComment(task.id, commentId);
     }
   };
 
@@ -472,9 +486,9 @@ export const TaskModal: React.FC = () => {
                             </a>
                             <button
                               type="button"
-                              onClick={() => deleteAttachment(task.id, att.id)}
+                              onClick={() => handleDeleteAttachment(att.id, att.name)}
                               className="p-1 text-slate-400 hover:text-rose-600 rounded"
-                              title="Delete"
+                              title="Delete attachment"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -530,9 +544,9 @@ export const TaskModal: React.FC = () => {
                             {(comment.userId === currentUser.id || currentUser.role === 'admin') && (
                               <button
                                 type="button"
-                                onClick={() => deleteComment(task.id, comment.id)}
+                                onClick={() => handleDeleteComment(comment.id)}
                                 className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-rose-600 rounded transition-all"
-                                title="Delete"
+                                title="Delete comment"
                               >
                                 <Trash2 className="w-3 h-3" />
                               </button>
