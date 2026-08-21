@@ -24,6 +24,7 @@ import { UserAvatar } from '../common/UserAvatar';
 import { CustomDropdown } from '../common/CustomDropdown';
 import { formatDate } from '../../utils/date';
 import { PRIORITY_CONFIG } from '../../utils/priorityConfig';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 
 export const TaskModal: React.FC = () => {
   const {
@@ -56,6 +57,14 @@ export const TaskModal: React.FC = () => {
   const [dueDate, setDueDate] = useState<string>('');
   const [priority, setPriority] = useState<Priority>('medium');
   const [error, setError] = useState('');
+
+  // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   // Comment input state
   const [newCommentText, setNewCommentText] = useState('');
@@ -153,24 +162,43 @@ export const TaskModal: React.FC = () => {
   };
 
   const handleDelete = () => {
-    if (task && window.confirm(`Are you sure you want to delete "${task.title}"?`)) {
-      deleteTask(task.id);
-      closeTaskModal();
-    }
+    if (!task) return;
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Task',
+      message: `Are you sure you want to delete "${task.title}"? This action cannot be undone.`,
+      onConfirm: () => {
+        deleteTask(task.id);
+        setConfirmDialog(null);
+        closeTaskModal();
+      },
+    });
   };
 
   const handleDeleteAttachment = (attachmentId: string, attachmentName: string) => {
     if (!task) return;
-    if (window.confirm(`Are you sure you want to delete attachment "${attachmentName}"? This cannot be undone.`)) {
-      deleteAttachment(task.id, attachmentId);
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Attachment',
+      message: `Are you sure you want to delete "${attachmentName}"? This file will be permanently removed from this task.`,
+      onConfirm: () => {
+        deleteAttachment(task.id, attachmentId);
+        setConfirmDialog(null);
+      },
+    });
   };
 
   const handleDeleteComment = (commentId: string) => {
     if (!task) return;
-    if (window.confirm('Are you sure you want to delete this comment?')) {
-      deleteComment(task.id, commentId);
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Comment',
+      message: 'Are you sure you want to delete this comment? This action cannot be undone.',
+      onConfirm: () => {
+        deleteComment(task.id, commentId);
+        setConfirmDialog(null);
+      },
+    });
   };
 
   const handlePostComment = (e: React.FormEvent) => {
@@ -759,6 +787,20 @@ export const TaskModal: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* In-App Confirmation Dialog */}
+      {confirmDialog && (
+        <ConfirmDialog
+          isOpen={confirmDialog.isOpen}
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          confirmVariant="danger"
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   );
 };

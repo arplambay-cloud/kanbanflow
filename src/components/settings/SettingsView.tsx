@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
 import { CustomDropdown } from '../common/CustomDropdown';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 import { User } from '../../types';
 
 export const SettingsView: React.FC = () => {
@@ -35,6 +36,13 @@ export const SettingsView: React.FC = () => {
   const [workspaceName, setWorkspaceName] = useState(workspace.name);
   const [workspaceDesc, setWorkspaceDesc] = useState(workspace.description);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   // New member modal state
   const [isAddingMember, setIsAddingMember] = useState(false);
@@ -108,9 +116,16 @@ export const SettingsView: React.FC = () => {
       alert('You cannot remove your own active account from the workspace.');
       return;
     }
-    if (window.confirm(`Are you sure you want to remove ${memberName} from this workspace?`)) {
-      deleteUser(memberId);
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Remove Team Member',
+      message: `Are you sure you want to remove ${memberName} from this workspace?`,
+      confirmLabel: 'Remove Member',
+      onConfirm: () => {
+        deleteUser(memberId);
+        setConfirmDialog(null);
+      },
+    });
   };
 
   return (
@@ -452,14 +467,17 @@ export const SettingsView: React.FC = () => {
 
           <button
             onClick={() => {
-              if (
-                window.confirm(
-                  'Are you sure you want to reset all data back to the default demo state?'
-                )
-              ) {
-                resetToDefaultData();
-                setWorkspaceName('Acme Product Team');
-              }
+              setConfirmDialog({
+                isOpen: true,
+                title: 'Reset Demo Data',
+                message: 'Are you sure you want to reset all data back to the default demo state? All custom boards, tasks, and users will be replaced.',
+                confirmLabel: 'Reset Data',
+                onConfirm: () => {
+                  resetToDefaultData();
+                  setWorkspaceName('Acme Product Team');
+                  setConfirmDialog(null);
+                },
+              });
             }}
             className="px-4 py-2 bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
           >
@@ -467,6 +485,20 @@ export const SettingsView: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* In-App Confirmation Dialog */}
+      {confirmDialog && (
+        <ConfirmDialog
+          isOpen={confirmDialog.isOpen}
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel || 'Delete'}
+          cancelLabel="Cancel"
+          confirmVariant="danger"
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+        />
+      )}
     </div>
   );
 };

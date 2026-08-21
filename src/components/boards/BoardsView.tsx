@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { formatDate } from '../../utils/date';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 
 const PRESET_COLORS = [
   '#7c3bed', // Primary Brand Purple
@@ -35,6 +36,7 @@ export const BoardsView: React.FC = () => {
   const [boardDescription, setBoardDescription] = useState('');
   const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0]);
   const [error, setError] = useState('');
+  const [boardToDelete, setBoardToDelete] = useState<Board | null>(null);
 
   const handleCreateBoard = (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,13 +129,7 @@ export const BoardsView: React.FC = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (
-                        window.confirm(
-                          `Delete board "${board.title}" and all its tasks?`
-                        )
-                      ) {
-                        deleteBoard(board.id);
-                      }
+                      setBoardToDelete(board);
                     }}
                     className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
                     title="Delete board"
@@ -299,6 +295,23 @@ export const BoardsView: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Delete Board In-App Confirmation Dialog */}
+      {boardToDelete && (
+        <ConfirmDialog
+          isOpen={!!boardToDelete}
+          title="Delete Board"
+          message={`Are you sure you want to delete "${boardToDelete.title}" and all of its tasks? This action cannot be undone.`}
+          confirmLabel="Delete Board"
+          cancelLabel="Cancel"
+          confirmVariant="danger"
+          onConfirm={() => {
+            deleteBoard(boardToDelete.id);
+            setBoardToDelete(null);
+          }}
+          onCancel={() => setBoardToDelete(null)}
+        />
       )}
     </div>
   );

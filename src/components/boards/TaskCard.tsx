@@ -6,6 +6,7 @@ import { PriorityBadge } from '../common/PriorityBadge';
 import { UserAvatar } from '../common/UserAvatar';
 import { formatDate, isOverdue } from '../../utils/date';
 import { Calendar, MoreVertical, Edit2, Trash2, ArrowRight, MessageSquare, Paperclip } from 'lucide-react';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 
 interface TaskCardProps {
   task: Task;
@@ -16,6 +17,7 @@ interface TaskCardProps {
 export const TaskCard: React.FC<TaskCardProps> = ({ task, index, columns }) => {
   const { users, openTaskModal, deleteTask, moveTask } = useApp();
   const [showMenu, setShowMenu] = React.useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
 
   const assignee = users.find((u) => u.id === task.assigneeId);
   const overdue = task.dueDate ? isOverdue(task.dueDate) : false;
@@ -86,9 +88,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, columns }) => {
                   <button
                     onClick={() => {
                       setShowMenu(false);
-                      if (window.confirm('Delete this task?')) {
-                        deleteTask(task.id);
-                      }
+                      setIsConfirmOpen(true);
                     }}
                     className="w-full px-3 py-1.5 text-left text-rose-600 hover:bg-rose-50 flex items-center gap-2"
                   >
@@ -156,6 +156,21 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, columns }) => {
               <UserAvatar user={assignee} size="xs" />
             </div>
           </div>
+
+          {/* In-App Confirmation Dialog */}
+          <ConfirmDialog
+            isOpen={isConfirmOpen}
+            title="Delete Task"
+            message={`Are you sure you want to delete "${task.title}"? This action cannot be undone.`}
+            confirmLabel="Delete"
+            cancelLabel="Cancel"
+            confirmVariant="danger"
+            onConfirm={() => {
+              deleteTask(task.id);
+              setIsConfirmOpen(false);
+            }}
+            onCancel={() => setIsConfirmOpen(false)}
+          />
         </div>
       )}
     </Draggable>

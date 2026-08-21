@@ -18,6 +18,7 @@ import {
 import { PriorityBadge } from '../common/PriorityBadge';
 import { UserAvatar } from '../common/UserAvatar';
 import { CustomDropdown } from '../common/CustomDropdown';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 import { formatDate, isOverdue } from '../../utils/date';
 
 export const TaskListView: React.FC = () => {
@@ -39,6 +40,7 @@ export const TaskListView: React.FC = () => {
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState<'dueDate' | 'title' | 'priority' | 'createdAt'>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -391,11 +393,7 @@ export const TaskListView: React.FC = () => {
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => {
-                              if (window.confirm('Delete this task?')) {
-                                deleteTask(task.id);
-                              }
-                            }}
+                            onClick={() => setTaskToDelete(task)}
                             className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors"
                             title="Delete task"
                           >
@@ -411,6 +409,23 @@ export const TaskListView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Task In-App Confirmation Dialog */}
+      {taskToDelete && (
+        <ConfirmDialog
+          isOpen={!!taskToDelete}
+          title="Delete Task"
+          message={`Are you sure you want to delete "${taskToDelete.title}"? This action cannot be undone.`}
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          confirmVariant="danger"
+          onConfirm={() => {
+            deleteTask(taskToDelete.id);
+            setTaskToDelete(null);
+          }}
+          onCancel={() => setTaskToDelete(null)}
+        />
+      )}
     </div>
   );
 };

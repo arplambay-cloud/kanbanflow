@@ -27,6 +27,7 @@ import { UserAvatar } from '../common/UserAvatar';
 import { CustomDropdown } from '../common/CustomDropdown';
 import { PriorityBadge } from '../common/PriorityBadge';
 import { formatDate } from '../../utils/date';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 
 export const UsersView: React.FC = () => {
   const {
@@ -47,6 +48,9 @@ export const UsersView: React.FC = () => {
 
   // View User Profile Modal state
   const [viewingUser, setViewingUser] = useState<User | null>(null);
+
+  // User to delete confirmation state
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   // Add User Modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -179,10 +183,7 @@ export const UsersView: React.FC = () => {
       alert('You cannot delete your own active user account.');
       return;
     }
-    if (window.confirm(`Are you sure you want to remove ${user.name} from the workspace?`)) {
-      deleteUser(user.id);
-      showToast(`Removed ${user.name} from the workspace.`);
-    }
+    setUserToDelete(user);
   };
 
   return (
@@ -842,6 +843,24 @@ export const UsersView: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Delete User Confirmation Dialog */}
+      {userToDelete && (
+        <ConfirmDialog
+          isOpen={!!userToDelete}
+          title="Remove Team Member"
+          message={`Are you sure you want to remove ${userToDelete.name} from the workspace? Their assigned tasks will remain but become unassigned.`}
+          confirmLabel="Remove Member"
+          cancelLabel="Cancel"
+          confirmVariant="danger"
+          onConfirm={() => {
+            deleteUser(userToDelete.id);
+            showToast(`Removed ${userToDelete.name} from the workspace.`);
+            setUserToDelete(null);
+          }}
+          onCancel={() => setUserToDelete(null)}
+        />
       )}
     </div>
   );

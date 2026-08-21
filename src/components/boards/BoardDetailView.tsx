@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
 import { CustomDropdown } from '../common/CustomDropdown';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 
 export const BoardDetailView: React.FC = () => {
   const {
@@ -39,6 +40,7 @@ export const BoardDetailView: React.FC = () => {
   const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState('');
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
+  const [columnToDelete, setColumnToDelete] = useState<{ id: string; title: string; taskCount: number } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -290,13 +292,11 @@ export const BoardDetailView: React.FC = () => {
                           <button
                             onClick={() => {
                               setActiveMenuColumnId(null);
-                              if (
-                                window.confirm(
-                                  `Delete column "${column.title}" and its ${columnTasks.length} tasks?`
-                                )
-                              ) {
-                                deleteColumn(column.id);
-                              }
+                              setColumnToDelete({
+                                id: column.id,
+                                title: column.title,
+                                taskCount: columnTasks.length,
+                              });
                             }}
                             className="w-full px-3 py-1.5 text-left text-rose-600 hover:bg-rose-50 flex items-center gap-2"
                           >
@@ -391,6 +391,23 @@ export const BoardDetailView: React.FC = () => {
           </div>
         </div>
       </DragDropContext>
+
+      {/* Delete Column In-App Confirmation Dialog */}
+      {columnToDelete && (
+        <ConfirmDialog
+          isOpen={!!columnToDelete}
+          title="Delete Column"
+          message={`Are you sure you want to delete column "${columnToDelete.title}" and its ${columnToDelete.taskCount} task(s)? This action cannot be undone.`}
+          confirmLabel="Delete Column"
+          cancelLabel="Cancel"
+          confirmVariant="danger"
+          onConfirm={() => {
+            deleteColumn(columnToDelete.id);
+            setColumnToDelete(null);
+          }}
+          onCancel={() => setColumnToDelete(null)}
+        />
+      )}
     </div>
   );
 };
