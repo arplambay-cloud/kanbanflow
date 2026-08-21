@@ -154,50 +154,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               </button>
             );
           })}
-
-          {/* Quick Boards List */}
-          <div className="pt-4">
-            <div className="flex items-center justify-between px-3 pt-2 pb-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Your Boards
-              </span>
-              <button
-                onClick={() => {
-                  setActivePage('boards');
-                  onClose();
-                }}
-                className="text-[11px] text-indigo-600 hover:text-indigo-700 font-medium"
-              >
-                View all
-              </button>
-            </div>
-            <div className="space-y-0.5">
-              {boards.map((b) => {
-                const isCurrent =
-                  activePage === 'board-detail' && activeBoardId === b.id;
-                return (
-                  <button
-                    key={b.id}
-                    onClick={() => {
-                      navigateToBoard(b.id);
-                      onClose();
-                    }}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors text-left truncate ${
-                      isCurrent
-                        ? 'bg-indigo-50 text-indigo-700 font-semibold'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                    }`}
-                  >
-                    <span
-                      className="w-2.5 h-2.5 rounded-md shrink-0"
-                      style={{ backgroundColor: b.color || '#7c3bed' }}
-                    />
-                    <span className="truncate">{b.title}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </nav>
 
         {/* User Account Menu & Logout */}
