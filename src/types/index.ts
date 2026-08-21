@@ -9,6 +9,27 @@ export interface User {
   jobTitle: string;
 }
 
+export interface TaskComment {
+  id: string;
+  taskId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface TaskAttachment {
+  id: string;
+  taskId: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  uploadedAt: string;
+  uploadedBy: string;
+}
+
 export interface Task {
   id: string;
   boardId: string;
@@ -21,6 +42,8 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
   order: number;
+  comments?: TaskComment[];
+  attachments?: TaskAttachment[];
 }
 
 export interface Column {

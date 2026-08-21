@@ -12,6 +12,8 @@ import {
   ArrowUpDown,
   Kanban,
   Check,
+  MessageSquare,
+  Paperclip,
 } from 'lucide-react';
 import { PriorityBadge } from '../common/PriorityBadge';
 import { UserAvatar } from '../common/UserAvatar';
@@ -288,10 +290,22 @@ export const TaskListView: React.FC = () => {
 
                       {/* Task Name & Description */}
                       <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-1">
-                          <span className={isDone ? 'line-through text-slate-400' : ''}>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors truncate ${isDone ? 'line-through text-slate-400' : ''}`}>
                             {task.title}
                           </span>
+                          {(task.comments?.length || 0) > 0 && (
+                            <span className="inline-flex items-center gap-0.5 text-[11px] text-slate-400 shrink-0 font-medium" title={`${task.comments?.length} comments`}>
+                              <MessageSquare className="w-3 h-3" />
+                              <span>{task.comments?.length}</span>
+                            </span>
+                          )}
+                          {(task.attachments?.length || 0) > 0 && (
+                            <span className="inline-flex items-center gap-0.5 text-[11px] text-slate-400 shrink-0 font-medium" title={`${task.attachments?.length} attachments`}>
+                              <Paperclip className="w-3 h-3" />
+                              <span>{task.attachments?.length}</span>
+                            </span>
+                          )}
                         </div>
                         {task.description && (
                           <div className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">

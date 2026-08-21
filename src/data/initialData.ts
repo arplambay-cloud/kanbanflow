@@ -102,6 +102,29 @@ export const initialTasks: Task[] = [
     createdAt: '2026-08-18T10:00:00.000Z',
     updatedAt: '2026-08-18T10:00:00.000Z',
     order: 0,
+    comments: [
+      {
+        id: 'comm-1',
+        taskId: 'task-101',
+        userId: 'user-1',
+        userName: 'Alex Morgan',
+        userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+        content: 'Please make sure to support PKCE flow for mobile clients as well!',
+        createdAt: '2026-08-19T10:30:00.000Z',
+      },
+    ],
+    attachments: [
+      {
+        id: 'att-1',
+        taskId: 'task-101',
+        name: 'OAuth_Flow_Diagram.png',
+        size: 245000,
+        type: 'image/png',
+        url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80',
+        uploadedAt: '2026-08-19T09:00:00.000Z',
+        uploadedBy: 'Sarah Chen',
+      },
+    ],
   },
   {
     id: 'task-102',
@@ -128,6 +151,26 @@ export const initialTasks: Task[] = [
     createdAt: '2026-08-19T09:00:00.000Z',
     updatedAt: '2026-08-20T14:00:00.000Z',
     order: 0,
+    comments: [
+      {
+        id: 'comm-2',
+        taskId: 'task-103',
+        userId: 'user-4',
+        userName: 'Emily Watson',
+        userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        content: 'I verified the heartbeat pings on the staging cluster. All looking solid!',
+        createdAt: '2026-08-20T11:15:00.000Z',
+      },
+      {
+        id: 'comm-3',
+        taskId: 'task-103',
+        userId: 'user-1',
+        userName: 'Alex Morgan',
+        userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+        content: 'Awesome, wrapping up reconnect exponential backoff now.',
+        createdAt: '2026-08-20T12:00:00.000Z',
+      },
+    ],
   },
   {
     id: 'task-104',

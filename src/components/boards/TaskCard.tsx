@@ -5,7 +5,7 @@ import { useApp } from '../../context/AppContext';
 import { PriorityBadge } from '../common/PriorityBadge';
 import { UserAvatar } from '../common/UserAvatar';
 import { formatDate, isOverdue } from '../../utils/date';
-import { Calendar, MoreVertical, Edit2, Trash2, ArrowRight } from 'lucide-react';
+import { Calendar, MoreVertical, Edit2, Trash2, ArrowRight, MessageSquare, Paperclip } from 'lucide-react';
 
 interface TaskCardProps {
   task: Task;
@@ -19,6 +19,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, columns }) => {
 
   const assignee = users.find((u) => u.id === task.assigneeId);
   const overdue = task.dueDate ? isOverdue(task.dueDate) : false;
+  const commentsCount = task.comments?.length || 0;
+  const attachmentsCount = task.attachments?.length || 0;
 
   // Next column for quick move button
   const currentColumnIndex = columns?.findIndex((c) => c.id === task.columnId) ?? -1;
@@ -110,24 +112,44 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, columns }) => {
             </p>
           )}
 
-          {/* Bottom Row: Due Date & Assignee Avatar */}
+          {/* Bottom Row: Metadata badges & Assignee Avatar */}
           <div className="flex items-center justify-between pt-2 mt-1 border-t border-slate-100/80">
-            {/* Due Date */}
-            {task.dueDate ? (
-              <div
-                className={`inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-md ${
-                  overdue
-                    ? 'text-rose-700 bg-rose-50 font-semibold'
-                    : 'text-slate-500 bg-slate-50'
-                }`}
-                title={`Due: ${task.dueDate}`}
-              >
-                <Calendar className="w-3 h-3" />
-                <span>{formatDate(task.dueDate)}</span>
-              </div>
-            ) : (
-              <div />
-            )}
+            {/* Left metadata: Due Date, Comments, Attachments */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {task.dueDate && (
+                <div
+                  className={`inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-md ${
+                    overdue
+                      ? 'text-rose-700 bg-rose-50 font-semibold'
+                      : 'text-slate-500 bg-slate-50'
+                  }`}
+                  title={`Due: ${task.dueDate}`}
+                >
+                  <Calendar className="w-3 h-3" />
+                  <span>{formatDate(task.dueDate)}</span>
+                </div>
+              )}
+
+              {commentsCount > 0 && (
+                <div
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 hover:text-slate-600"
+                  title={`${commentsCount} comments`}
+                >
+                  <MessageSquare className="w-3 h-3" />
+                  <span>{commentsCount}</span>
+                </div>
+              )}
+
+              {attachmentsCount > 0 && (
+                <div
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 hover:text-slate-600"
+                  title={`${attachmentsCount} attachments`}
+                >
+                  <Paperclip className="w-3 h-3" />
+                  <span>{attachmentsCount}</span>
+                </div>
+              )}
+            </div>
 
             {/* Assignee */}
             <div className="shrink-0" title={assignee ? `Assigned to ${assignee.name}` : 'Unassigned'}>

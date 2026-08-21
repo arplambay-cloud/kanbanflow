@@ -4,6 +4,8 @@ import {
   Board,
   Column,
   Task,
+  TaskComment,
+  TaskAttachment,
   Notification,
   ActivityLog,
   Workspace,
@@ -59,6 +61,10 @@ interface AppContextType {
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   moveTask: (taskId: string, targetColumnId: string, newOrder: number) => void;
+  addComment: (taskId: string, content: string) => void;
+  deleteComment: (taskId: string, commentId: string) => void;
+  addAttachment: (taskId: string, fileData: { name: string; size: number; type: string; url: string }) => void;
+  deleteAttachment: (taskId: string, attachmentId: string) => void;
   notifications: Notification[];
   unreadNotificationCount: number;
   markNotificationAsRead: (id: string) => void;
@@ -548,6 +554,105 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setActiveBoardId(null);
   };
 
+  const addComment = (taskId: string, content: string) => {
+    if (!content.trim()) return;
+    const comment: TaskComment = {
+      id: `comment-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      taskId,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userAvatar: currentUser.avatar,
+      content: content.trim(),
+      createdAt: new Date().toISOString(),
+    };
+
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== taskId) return t;
+        return {
+          ...t,
+          comments: [...(t.comments || []), comment],
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+
+    const task = tasks.find((t) => t.id === taskId);
+    if (task) {
+      const board = boards.find((b) => b.id === task.boardId);
+      logActivity('created_task', task.title, board?.title, `Added comment: "${content.trim().substring(0, 30)}"`);
+      if (task.assigneeId && task.assigneeId !== currentUser.id) {
+        notifyUser(
+          task.assigneeId,
+          'task_assigned',
+          `commented on "${task.title}": "${content.trim().substring(0, 40)}${content.trim().length > 40 ? '...' : ''}"`,
+          task.id,
+          task.title,
+          task.boardId
+        );
+      }
+    }
+  };
+
+  const deleteComment = (taskId: string, commentId: string) => {
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== taskId) return t;
+        return {
+          ...t,
+          comments: (t.comments || []).filter((c) => c.id !== commentId),
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  };
+
+  const addAttachment = (
+    taskId: string,
+    fileData: { name: string; size: number; type: string; url: string }
+  ) => {
+    const attachment: TaskAttachment = {
+      id: `att-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      taskId,
+      name: fileData.name,
+      size: fileData.size,
+      type: fileData.type,
+      url: fileData.url,
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: currentUser.name,
+    };
+
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== taskId) return t;
+        return {
+          ...t,
+          attachments: [...(t.attachments || []), attachment],
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+
+    const task = tasks.find((t) => t.id === taskId);
+    if (task) {
+      const board = boards.find((b) => b.id === task.boardId);
+      logActivity('created_task', task.title, board?.title, `Attached file: ${fileData.name}`);
+    }
+  };
+
+  const deleteAttachment = (taskId: string, attachmentId: string) => {
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== taskId) return t;
+        return {
+          ...t,
+          attachments: (t.attachments || []).filter((a) => a.id !== attachmentId),
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -574,6 +679,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateTask,
         deleteTask,
         moveTask,
+        addComment,
+        deleteComment,
+        addAttachment,
+        deleteAttachment,
         notifications,
         unreadNotificationCount,
         markNotificationAsRead,
