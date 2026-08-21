@@ -111,12 +111,6 @@ export const BoardsView: React.FC = () => {
               onClick={() => navigateToBoard(board.id)}
               className="h-56 bg-white rounded-xl border border-slate-200 shadow-subtle hover:shadow-card hover:border-slate-300 transition-all flex flex-col justify-between p-5 cursor-pointer relative group overflow-hidden"
             >
-              {/* Top Accent Stripe */}
-              <div
-                className="h-1.5 w-full absolute top-0 left-0"
-                style={{ backgroundColor: board.color || '#7c3bed' }}
-              />
-
               {/* Card Content Top */}
               <div>
                 <div className="flex items-start justify-between gap-2 mb-2">
