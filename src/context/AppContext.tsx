@@ -204,8 +204,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     jobTitle: authUser?.jobTitle || 'Team Lead',
   };
 
-  // Current active user object
-  const currentUser = authUser || users.find((u) => u.id === currentUserId) || users[0] || defaultAdminUser;
+  // Current active user object: merges Clerk auth with local profile updates
+  const currentUser = useMemo<User>(() => {
+    const fromUsers = users.find((u) => u.id === currentUserId || (authUser?.id && u.id === authUser.id));
+    if (fromUsers) {
+      return {
+        ...defaultAdminUser,
+        ...(authUser || {}),
+        ...fromUsers,
+      };
+    }
+    return authUser || defaultAdminUser;
+  }, [users, currentUserId, authUser]);
 
   // Persist to localStorage whenever state changes
   useEffect(() => {

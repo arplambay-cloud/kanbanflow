@@ -19,11 +19,13 @@ import {
   Trash2,
   Image as ImageIcon,
 } from 'lucide-react';
+import { useUser } from '@clerk/react';
 import { UserAvatar } from '../common/UserAvatar';
 import { PriorityBadge } from '../common/PriorityBadge';
 import { formatDate, isOverdue } from '../../utils/date';
 
 export const ProfileView: React.FC = () => {
+  const { user: clerkUser } = useUser();
   const {
     currentUser,
     updateUser,
@@ -81,24 +83,54 @@ export const ProfileView: React.FC = () => {
     }
 
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       if (typeof reader.result === 'string') {
-        setAvatar(reader.result);
+        const dataUrl = reader.result;
+        setAvatar(dataUrl);
+        updateUser(currentUser.id, { avatar: dataUrl });
+
+        // Also sync profile image to Clerk in the background if logged into Clerk
+        if (clerkUser) {
+          try {
+            await clerkUser.setProfileImage({ file });
+          } catch (err) {
+            console.log('Clerk setProfileImage background update:', err);
+          }
+        }
       }
     };
     reader.readAsDataURL(file);
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !email.trim()) return;
 
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    const trimmedTitle = jobTitle.trim();
+    const trimmedAvatar = avatar.trim();
+
     updateUser(currentUser.id, {
-      name: name.trim(),
-      email: email.trim(),
-      jobTitle: jobTitle.trim() || undefined,
-      avatar: avatar.trim() || undefined,
+      name: trimmedName,
+      email: trimmedEmail,
+      jobTitle: trimmedTitle || undefined,
+      avatar: trimmedAvatar || undefined,
     });
+
+    if (clerkUser) {
+      try {
+        const nameParts = trimmedName.split(' ');
+        const firstName = nameParts[0];
+        const lastName = nameParts.slice(1).join(' ') || '';
+        await clerkUser.update({
+          firstName,
+          lastName: lastName || undefined,
+        });
+      } catch (err) {
+        console.log('Clerk user profile background update:', err);
+      }
+    }
 
     setIsEditing(false);
     setSaveSuccess(true);

@@ -8,6 +8,8 @@ import {
   Check,
   ArrowRight,
   Sparkles,
+  User as UserIcon,
+  Settings,
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
 import { UserButton } from '@clerk/react';
@@ -221,19 +223,28 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
           )}
         </div>
 
-        {/* Profile Avatar Quick Button & Clerk UserButton */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setActivePage('profile')}
-            className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-            title="Go to Profile"
+        {/* Unified Account & Profile Button */}
+        <div className="flex items-center">
+          <UserButton
+            appearance={{
+              elements: {
+                avatarBox: 'w-8 h-8 rounded-full ring-2 ring-indigo-500/20 hover:ring-indigo-500/50 shadow-sm transition-all',
+              },
+            }}
           >
-            <UserAvatar user={currentUser} size="sm" />
-          </button>
-
-          <div className="pl-1 border-l border-slate-200 flex items-center">
-            <UserButton />
-          </div>
+            <UserButton.MenuItems>
+              <UserButton.Action
+                label="My Profile"
+                labelIcon={<UserIcon className="w-4 h-4" />}
+                onClick={() => setActivePage('profile')}
+              />
+              <UserButton.Action
+                label="Workspace Settings"
+                labelIcon={<Settings className="w-4 h-4" />}
+                onClick={() => setActivePage('settings')}
+              />
+            </UserButton.MenuItems>
+          </UserButton>
         </div>
       </div>
     </header>
