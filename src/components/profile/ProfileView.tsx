@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   User as UserIcon,
@@ -14,6 +14,9 @@ import {
   Edit3,
   Check,
   X,
+  Camera,
+  Upload,
+  Trash2,
   Image as ImageIcon,
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
@@ -37,6 +40,7 @@ export const ProfileView: React.FC = () => {
   const [jobTitle, setJobTitle] = useState(currentUser.jobTitle || '');
   const [avatar, setAvatar] = useState(currentUser.avatar || '');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const doneColumnIds = new Set(
     columns
@@ -56,6 +60,24 @@ export const ProfileView: React.FC = () => {
     assignedTasks.length > 0
       ? Math.round((completedTasks.length / assignedTasks.length) * 100)
       : 0;
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Photo size exceeds 5MB limit. Please upload a smaller image file.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setAvatar(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,6 +105,15 @@ export const ProfileView: React.FC = () => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+      {/* Hidden file upload input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
+
       {/* Page Title */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -90,7 +121,7 @@ export const ProfileView: React.FC = () => {
             User Profile
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Manage your personal profile details, contact information, and workload.
+            Manage your personal profile details, profile picture, and workload.
           </p>
         </div>
 
@@ -124,12 +155,55 @@ export const ProfileView: React.FC = () => {
                   Edit Personal Information
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Update your display name, email, job title, and avatar.
+                  Update your profile picture, display name, email, and job title.
                 </p>
               </div>
               <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full uppercase tracking-wider">
                 {currentUser.role}
               </span>
+            </div>
+
+            {/* Profile Picture Upload Area */}
+            <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-xl flex flex-col sm:flex-row items-center gap-5">
+              <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                <UserAvatar
+                  user={{ ...currentUser, name, avatar }}
+                  size="xl"
+                />
+                <div className="absolute inset-0 bg-black/40 rounded-full flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera className="w-5 h-5" />
+                  <span className="text-[9px] font-medium mt-0.5">Upload</span>
+                </div>
+              </div>
+
+              <div className="flex-1 text-center sm:text-left space-y-2">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">Profile Picture</h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Upload a JPEG, PNG, or GIF file (up to 5MB) from your computer.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold shadow-2xs transition-all"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Upload New Photo</span>
+                  </button>
+                  {avatar && (
+                    <button
+                      type="button"
+                      onClick={() => setAvatar('')}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-semibold shadow-2xs transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Remove Photo</span>
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -170,7 +244,7 @@ export const ProfileView: React.FC = () => {
               </div>
 
               {/* Job Title */}
-              <div>
+              <div className="sm:col-span-2">
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
                   Job Title / Position
                 </label>
@@ -181,23 +255,6 @@ export const ProfileView: React.FC = () => {
                     value={jobTitle}
                     onChange={(e) => setJobTitle(e.target.value)}
                     placeholder="e.g. Senior Frontend Engineer"
-                    className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-slate-200 text-xs sm:text-sm font-medium bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Avatar URL */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-                  Avatar Image URL
-                </label>
-                <div className="relative">
-                  <ImageIcon className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="url"
-                    value={avatar}
-                    onChange={(e) => setAvatar(e.target.value)}
-                    placeholder="https://images.unsplash.com/..."
                     className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-slate-200 text-xs sm:text-sm font-medium bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
                   />
                 </div>
@@ -226,7 +283,17 @@ export const ProfileView: React.FC = () => {
           /* View Mode */
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-slate-100">
             <div className="flex items-center gap-4 sm:gap-6">
-              <UserAvatar user={currentUser} size="xl" />
+              <div
+                className="relative group cursor-pointer"
+                onClick={() => setIsEditing(true)}
+                title="Click to edit profile & change picture"
+              >
+                <UserAvatar user={currentUser} size="xl" />
+                <div className="absolute inset-0 bg-black/35 rounded-full flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera className="w-5 h-5" />
+                  <span className="text-[9px] font-medium mt-0.5">Edit</span>
+                </div>
+              </div>
               <div>
                 <div className="flex items-center gap-2.5">
                   <h3 className="text-xl sm:text-2xl font-bold text-slate-900">
