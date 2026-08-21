@@ -32,6 +32,7 @@ export const TaskModal: React.FC = () => {
     boards,
     columns,
     users,
+    tasks,
     currentUser,
     createTask,
     updateTask,
@@ -42,7 +43,10 @@ export const TaskModal: React.FC = () => {
     deleteAttachment,
   } = useApp();
 
-  const { isOpen, task, initialBoardId, initialColumnId } = taskModalState;
+  const { isOpen, task: modalTask, initialBoardId, initialColumnId } = taskModalState;
+
+  // Reactively lookup live task from global state so comments/attachments/status reflect immediately
+  const task = modalTask ? tasks.find((t) => t.id === modalTask.id) || modalTask : null;
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -62,15 +66,16 @@ export const TaskModal: React.FC = () => {
   // Synchronize modal state on open or change
   useEffect(() => {
     if (isOpen) {
-      if (task) {
-        // Edit mode
-        setTitle(task.title);
-        setDescription(task.description || '');
-        setSelectedBoardId(task.boardId);
-        setSelectedColumnId(task.columnId);
-        setAssigneeId(task.assigneeId || '');
-        setDueDate(task.dueDate || '');
-        setPriority(task.priority);
+      if (modalTask) {
+        // Edit mode - initialize with current task data
+        const currentData = tasks.find((t) => t.id === modalTask.id) || modalTask;
+        setTitle(currentData.title);
+        setDescription(currentData.description || '');
+        setSelectedBoardId(currentData.boardId);
+        setSelectedColumnId(currentData.columnId);
+        setAssigneeId(currentData.assigneeId || '');
+        setDueDate(currentData.dueDate || '');
+        setPriority(currentData.priority);
       } else {
         // Create mode
         const defaultBoard = initialBoardId || (boards.length > 0 ? boards[0].id : '');
@@ -88,7 +93,7 @@ export const TaskModal: React.FC = () => {
       setNewCommentText('');
       setError('');
     }
-  }, [isOpen, task, initialBoardId, initialColumnId, boards, columns]);
+  }, [isOpen, modalTask?.id]);
 
   // When board changes, ensure column is valid for that board
   const handleBoardChange = (boardId: string) => {
