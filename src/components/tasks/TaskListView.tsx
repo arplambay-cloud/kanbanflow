@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Task, Priority } from '../../types';
 import {
@@ -37,6 +37,18 @@ export const TaskListView: React.FC = () => {
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState<'dueDate' | 'title' | 'priority' | 'createdAt'>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const doneColumnIds = new Set(
     columns
@@ -126,12 +138,18 @@ export const TaskListView: React.FC = () => {
         <div className="relative flex-1 min-w-[220px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
+            ref={searchInputRef}
             type="text"
             placeholder="Search tasks by name or description..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-9 pr-14 py-2 rounded-lg border border-slate-200 text-xs font-medium bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
           />
+          <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5 pointer-events-none select-none">
+            <kbd className="inline-flex items-center justify-center h-5 px-1.5 text-[10px] font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded font-mono shadow-2xs">
+              ⌘K
+            </kbd>
+          </div>
         </div>
 
         {/* Filters */}
