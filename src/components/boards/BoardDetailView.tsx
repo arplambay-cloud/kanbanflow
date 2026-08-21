@@ -164,11 +164,14 @@ export const BoardDetailView: React.FC = () => {
                 placeholder="Search board..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-12 py-1.5 rounded-lg border border-slate-200 text-xs bg-slate-50 focus:bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
+                className="w-full pl-8 pr-14 py-1.5 rounded-lg border border-slate-200 text-xs bg-slate-50 focus:bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
               />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center pointer-events-none select-none">
-                <kbd className="inline-flex items-center justify-center h-4.5 px-1.5 text-[9px] font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded font-mono shadow-2xs">
-                  ⌘K
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 pointer-events-none select-none">
+                <kbd className="inline-flex items-center justify-center min-w-[16px] h-4.5 px-1 text-[10px] font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded font-mono shadow-2xs">
+                  ⌘
+                </kbd>
+                <kbd className="inline-flex items-center justify-center min-w-[16px] h-4.5 px-1 text-[9px] font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded font-mono shadow-2xs">
+                  K
                 </kbd>
               </div>
             </div>
