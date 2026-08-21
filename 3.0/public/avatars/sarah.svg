@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="bg-sarah" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EC4899"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="skin-sarah" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FED7AA"/>
+      <stop offset="100%" stop-color="#FDBA74"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="60" fill="url(#bg-sarah)"/>
+  <!-- Torso & Blazer -->
+  <path d="M25 120 C25 90, 45 82, 60 82 C75 82, 95 90, 95 120 Z" fill="#047857"/>
+  <path d="M52 82 L60 102 L68 82 Z" fill="#F3F4F6"/>
+  <!-- Neck -->
+  <rect x="53" y="66" width="14" height="20" rx="4" fill="#FDBA74"/>
+  <!-- Head -->
+  <ellipse cx="60" cy="52" rx="20" ry="24" fill="url(#skin-sarah)"/>
+  <!-- Hair Long Back & Front -->
+  <path d="M34 40 C34 20, 50 18, 60 18 C70 18, 86 20, 86 40 C86 65, 84 88, 80 92 C74 72, 80 50, 78 40 C75 30, 45 30, 42 40 C40 50, 46 72, 40 92 C36 88, 34 65, 34 40 Z" fill="#1C1917"/>
+  <!-- Eyes -->
+  <circle cx="51" cy="50" r="2.5" fill="#1C1917"/>
+  <circle cx="69" cy="50" r="2.5" fill="#1C1917"/>
+  <!-- Lashes -->
+  <path d="M47 46 Q51 44 55 46" fill="none" stroke="#1C1917" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M65 46 Q69 44 73 46" fill="none" stroke="#1C1917" stroke-width="1.8" stroke-linecap="round"/>
+  <!-- Smile -->
+  <path d="M53 62 Q60 68 67 62" fill="none" stroke="#C2410C" stroke-width="2" stroke-linecap="round"/>
+</svg>

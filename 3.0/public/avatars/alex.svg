@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="bg-alex" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="skin-alex" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCD34D"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="60" fill="url(#bg-alex)"/>
+  <!-- Torso & Suit -->
+  <path d="M25 120 C25 90, 45 80, 60 80 C75 80, 95 90, 95 120 Z" fill="#1E293B"/>
+  <path d="M50 82 L60 100 L70 82 Z" fill="#FFFFFF"/>
+  <path d="M57 88 L60 115 L63 88 Z" fill="#EF4444"/>
+  <!-- Neck -->
+  <rect x="52" y="65" width="16" height="20" rx="4" fill="#FBBF24"/>
+  <!-- Head -->
+  <ellipse cx="60" cy="52" rx="22" ry="26" fill="url(#skin-alex)"/>
+  <!-- Hair -->
+  <path d="M38 48 C38 28, 50 22, 60 22 C72 22, 82 28, 82 45 C80 34, 70 30, 60 30 C48 30, 42 38, 38 48 Z" fill="#334155"/>
+  <!-- Glasses -->
+  <rect x="44" y="46" width="13" height="10" rx="2" fill="none" stroke="#0F172A" stroke-width="2.5"/>
+  <rect x="63" y="46" width="13" height="10" rx="2" fill="none" stroke="#0F172A" stroke-width="2.5"/>
+  <line x1="57" y1="51" x2="63" y2="51" stroke="#0F172A" stroke-width="2.5"/>
+  <!-- Eyes -->
+  <circle cx="50.5" cy="51" r="2" fill="#0F172A"/>
+  <circle cx="69.5" cy="51" r="2" fill="#0F172A"/>
+  <!-- Smile -->
+  <path d="M53 64 Q60 70 67 64" fill="none" stroke="#B45309" stroke-width="2" stroke-linecap="round"/>
+</svg>

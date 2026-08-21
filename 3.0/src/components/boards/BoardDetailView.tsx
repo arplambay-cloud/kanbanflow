@@ -1,0 +1,371 @@
+import React, { useState } from 'react';
+import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
+import { useApp } from '../../context/AppContext';
+import { TaskCard } from './TaskCard';
+import { CustomDropdown, DropdownOption } from '../common/CustomDropdown';
+import {
+  Plus,
+  ArrowLeft,
+  MoreHorizontal,
+  Edit2,
+  Trash2,
+  Search,
+  Filter,
+} from 'lucide-react';
+
+export const BoardDetailView: React.FC = () => {
+  const {
+    boards,
+    activeBoardId,
+    setActivePage,
+    columns,
+    tasks,
+    moveTask,
+    createColumn,
+    updateColumn,
+    deleteColumn,
+    openTaskModal,
+    users,
+  } = useApp();
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterAssigneeId, setFilterAssigneeId] = useState<string>('all');
+  const [isAddingColumn, setIsAddingColumn] = useState(false);
+  const [newColumnTitle, setNewColumnTitle] = useState('');
+  const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
+  const [editingColumnTitle, setEditingColumnTitle] = useState('');
+  const [activeMenuColumnId, setActiveMenuColumnId] = useState<string | null>(null);
+
+  const currentBoard = boards.find((b) => b.id === activeBoardId);
+
+  if (!currentBoard) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-slate-500 mb-4">Board not found or has been deleted.</p>
+        <button
+          onClick={() => setActivePage('boards')}
+          className="px-4 py-2 bg-brand-600 text-white rounded-lg text-xs font-semibold"
+        >
+          Back to Boards
+        </button>
+      </div>
+    );
+  }
+
+  const boardColumns = columns
+    .filter((c) => c.boardId === currentBoard.id)
+    .sort((a, b) => a.order - b.order);
+
+  const filteredTasks = tasks.filter((t) => {
+    if (t.boardId !== currentBoard.id) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchTitle = t.title.toLowerCase().includes(q);
+      const matchDesc = t.description?.toLowerCase().includes(q);
+      if (!matchTitle && !matchDesc) return false;
+    }
+    if (filterAssigneeId !== 'all') {
+      if (filterAssigneeId === 'unassigned' && t.assigneeId) return false;
+      if (filterAssigneeId !== 'unassigned' && t.assigneeId !== filterAssigneeId) return false;
+    }
+    return true;
+  });
+
+  const handleDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+    if (!destination) return;
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
+
+    moveTask(draggableId, destination.droppableId, destination.index);
+  };
+
+  const handleAddColumnSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newColumnTitle.trim()) return;
+    createColumn(currentBoard.id, newColumnTitle.trim());
+    setNewColumnTitle('');
+    setIsAddingColumn(false);
+  };
+
+  const handleUpdateColumnSubmit = (columnId: string) => {
+    if (!editingColumnTitle.trim()) return;
+    updateColumn(columnId, editingColumnTitle.trim());
+    setEditingColumnId(null);
+  };
+
+  // Member filter dropdown options
+  const memberFilterOptions: DropdownOption[] = [
+    { value: 'all', label: 'All Members' },
+    { value: 'unassigned', label: 'Unassigned' },
+    ...users.map((u) => ({
+      value: u.id,
+      label: u.name,
+    })),
+  ];
+
+  return (
+    <div className="flex-1 flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-slate-50">
+      {/* Board Header Toolbar */}
+      <div className="bg-white border-b border-slate-200/80 px-4 sm:px-6 py-3 shrink-0 shadow-subtle">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          {/* Board Title & Back */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setActivePage('boards')}
+              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              title="Back to all boards"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-2.5">
+              <span
+                className="w-3.5 h-3.5 rounded-md shrink-0 shadow-xs"
+                style={{ backgroundColor: currentBoard.color || '#7839e6' }}
+              />
+              <div>
+                <h2 className="font-display font-bold text-slate-900 text-base sm:text-lg flex items-center gap-2">
+                  <span>{currentBoard.title}</span>
+                  <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                    {filteredTasks.length} tasks
+                  </span>
+                </h2>
+                {currentBoard.description && (
+                  <p className="text-xs text-slate-500 line-clamp-1">
+                    {currentBoard.description}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Search, Assignee Filter (Custom Dropdown), Add Task */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Search Input */}
+            <div className="relative min-w-[180px]">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search board..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 bg-white"
+              />
+            </div>
+
+            {/* Custom Dropdown Member Filter */}
+            <CustomDropdown
+              options={memberFilterOptions}
+              value={filterAssigneeId}
+              onChange={setFilterAssigneeId}
+              size="sm"
+              className="min-w-[130px]"
+            />
+
+            {/* Add Task Button */}
+            <button
+              onClick={() => openTaskModal(undefined, currentBoard.id)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white rounded-lg font-semibold text-xs shadow-sm transition-all"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Task</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Horizontal Drag and Drop Canvas */}
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div className="flex-1 overflow-x-auto p-4 sm:p-6 flex items-start gap-4 sm:gap-5">
+          {boardColumns.map((column) => {
+            const columnTasks = filteredTasks
+              .filter((t) => t.columnId === column.id)
+              .sort((a, b) => a.order - b.order);
+
+            const isEditing = editingColumnId === column.id;
+            const isMenuOpen = activeMenuColumnId === column.id;
+
+            return (
+              <div
+                key={column.id}
+                className="w-72 sm:w-80 shrink-0 bg-slate-100/90 rounded-xl p-3 flex flex-col max-h-full border border-slate-200/80 shadow-xs"
+              >
+                {/* Column Header */}
+                <div className="flex items-center justify-between px-1 py-1 mb-2 relative">
+                  {isEditing ? (
+                    <div className="flex items-center gap-1.5 flex-1">
+                      <input
+                        type="text"
+                        autoFocus
+                        value={editingColumnTitle}
+                        onChange={(e) => setEditingColumnTitle(e.target.value)}
+                        onBlur={() => handleUpdateColumnSubmit(column.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleUpdateColumnSubmit(column.id);
+                          if (e.key === 'Escape') setEditingColumnId(null);
+                        }}
+                        className="w-full px-2.5 py-1 text-xs font-semibold rounded-md border border-brand-500 bg-white text-slate-900 focus:outline-none"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 min-w-0">
+                      <h3 className="font-display font-bold text-slate-800 text-xs sm:text-sm tracking-tight truncate">
+                        {column.title}
+                      </h3>
+                      <span className="px-1.5 py-0.2 rounded-full text-[11px] font-bold bg-white text-slate-500 border border-slate-200">
+                        {columnTasks.length}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Header Actions */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => openTaskModal(undefined, currentBoard.id, column.id)}
+                      className="p-1 text-slate-400 hover:text-brand-600 hover:bg-white rounded-md transition-colors"
+                      title="Add task in this column"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+
+                    <div className="relative">
+                      <button
+                        onClick={() =>
+                          setActiveMenuColumnId(isMenuOpen ? null : column.id)
+                        }
+                        className="p-1 text-slate-400 hover:text-slate-600 hover:bg-white rounded-md transition-colors"
+                      >
+                        <MoreHorizontal className="w-3.5 h-3.5" />
+                      </button>
+
+                      {isMenuOpen && (
+                        <div
+                          className="absolute right-0 top-full mt-1 w-36 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 z-30 animate-fade-in text-xs"
+                          onMouseLeave={() => setActiveMenuColumnId(null)}
+                        >
+                          <button
+                            onClick={() => {
+                              setEditingColumnId(column.id);
+                              setEditingColumnTitle(column.title);
+                              setActiveMenuColumnId(null);
+                            }}
+                            className="w-full px-3 py-1.5 text-left text-slate-700 hover:bg-brand-50 hover:text-brand-700 flex items-center gap-2 font-medium"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            <span>Rename Column</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setActiveMenuColumnId(null);
+                              if (
+                                window.confirm(
+                                  `Delete column "${column.title}" and its ${columnTasks.length} tasks?`
+                                )
+                              ) {
+                                deleteColumn(column.id);
+                              }
+                            }}
+                            className="w-full px-3 py-1.5 text-left text-rose-600 hover:bg-rose-50 flex items-center gap-2 font-medium"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete Column</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Droppable Task Container */}
+                <Droppable droppableId={column.id}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`flex-1 overflow-y-auto min-h-[140px] rounded-lg transition-colors p-1 ${
+                        snapshot.isDraggingOver
+                          ? 'bg-brand-50/70 ring-2 ring-brand-400/40'
+                          : ''
+                      }`}
+                    >
+                      {columnTasks.map((task, idx) => (
+                        <TaskCard
+                          key={task.id}
+                          task={task}
+                          index={idx}
+                          columns={boardColumns}
+                        />
+                      ))}
+                      {provided.placeholder}
+
+                      {/* Add Task Button at bottom of column */}
+                      <button
+                        onClick={() => openTaskModal(undefined, currentBoard.id, column.id)}
+                        className="w-full py-1.5 px-3 text-xs font-medium text-slate-500 hover:text-brand-600 hover:bg-white rounded-lg flex items-center justify-center gap-1.5 transition-all border border-dashed border-slate-300 hover:border-brand-400"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add Task</span>
+                      </button>
+                    </div>
+                  )}
+                </Droppable>
+              </div>
+            );
+          })}
+
+          {/* Add Column Option */}
+          <div className="w-72 sm:w-80 shrink-0">
+            {isAddingColumn ? (
+              <form
+                onSubmit={handleAddColumnSubmit}
+                className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm animate-fade-in"
+              >
+                <input
+                  type="text"
+                  autoFocus
+                  required
+                  placeholder="Column name (e.g. In QA)..."
+                  value={newColumnTitle}
+                  onChange={(e) => setNewColumnTitle(e.target.value)}
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 mb-2.5"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="submit"
+                    className="flex-1 py-1.5 px-3 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-all"
+                  >
+                    Add Column
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddingColumn(false);
+                      setNewColumnTitle('');
+                    }}
+                    className="py-1.5 px-3 text-slate-600 hover:bg-slate-100 rounded-lg text-xs font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <button
+                onClick={() => setIsAddingColumn(true)}
+                className="w-full py-3.5 px-4 bg-slate-100/70 hover:bg-slate-200/80 rounded-xl border border-dashed border-slate-300 text-slate-600 hover:text-slate-900 font-semibold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4 text-brand-600" />
+                <span>Add Column</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </DragDropContext>
+    </div>
+  );
+};

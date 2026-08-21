@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="bg-emily" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="skin-emily" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FEE2E2"/>
+      <stop offset="100%" stop-color="#FECACA"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="60" fill="url(#bg-emily)"/>
+  <!-- Torso & Top -->
+  <path d="M25 120 C25 90, 45 82, 60 82 C75 82, 95 90, 95 120 Z" fill="#6366F1"/>
+  <path d="M50 82 L60 98 L70 82 Z" fill="#F8FAFC"/>
+  <!-- Neck -->
+  <rect x="53" y="66" width="14" height="20" rx="4" fill="#FECACA"/>
+  <!-- Head -->
+  <ellipse cx="60" cy="52" rx="20" ry="24" fill="url(#skin-emily)"/>
+  <!-- Blonde Wavy Hair -->
+  <path d="M36 42 C36 22, 48 18, 60 18 C72 18, 84 22, 84 42 C84 65, 82 85, 78 88 C74 70, 78 48, 76 38 C74 28, 46 28, 44 38 C42 48, 46 70, 42 88 C38 85, 36 65, 36 42 Z" fill="#FBBF24"/>
+  <!-- Eyes -->
+  <circle cx="51" cy="50" r="2.5" fill="#1E293B"/>
+  <circle cx="69" cy="50" r="2.5" fill="#1E293B"/>
+  <!-- Smile -->
+  <path d="M53 62 Q60 67 67 62" fill="none" stroke="#E11D48" stroke-width="2" stroke-linecap="round"/>
+</svg>
