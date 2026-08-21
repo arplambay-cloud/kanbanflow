@@ -9,7 +9,7 @@ import './index.css';
 
 const CLERK_PUBLISHABLE_KEY =
   import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ||
-  'pk_test_Y3JlZGlibGUtaHVtcGJhY2stNTkzMy5jbGVyay5hY2NvdW50cy5kZXYk';
+  'pk_live_Y2xlcmsua2FuYmFuZmxvdy11dnl0LnZlcmNlbC5hcHAk';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
