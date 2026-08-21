@@ -237,7 +237,7 @@ export const BoardsView: React.FC = () => {
                   value={boardTitle}
                   onChange={(e) => setBoardTitle(e.target.value)}
                   placeholder="e.g. Mobile App Redesign"
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:border-indigo-600 font-medium"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
                 />
               </div>
 
@@ -250,7 +250,7 @@ export const BoardsView: React.FC = () => {
                   value={boardDescription}
                   onChange={(e) => setBoardDescription(e.target.value)}
                   placeholder="What is this board for?"
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:border-indigo-600 resize-none"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                 />
               </div>
 

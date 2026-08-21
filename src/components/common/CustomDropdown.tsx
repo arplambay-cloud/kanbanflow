@@ -67,7 +67,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
         type="button"
         disabled={disabled}
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between gap-2.5 bg-white border border-slate-200 text-slate-800 hover:border-slate-300 hover:bg-slate-50/50 focus:outline-none focus:border-brand-600 transition-all font-medium shadow-sm ${sizeStyles[size]} ${
+        className={`w-full flex items-center justify-between gap-2.5 bg-white border border-slate-200/90 text-slate-800 hover:border-slate-300 hover:bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 transition-all font-medium shadow-sm ${sizeStyles[size]} ${
           disabled ? 'opacity-50 cursor-not-allowed bg-slate-50' : 'cursor-pointer'
         } ${buttonClassName}`}
       >
