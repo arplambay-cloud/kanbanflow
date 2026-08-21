@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   User,
   Board,
@@ -138,8 +139,39 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     loadStorage(LOCAL_STORAGE_KEYS.ACTIVITY, initialActivityLogs)
   );
 
-  const [activePage, setActivePage] = useState<ActivePage>('dashboard');
-  const [activeBoardId, setActiveBoardId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Derive activePage and activeBoardId directly from current URL pathname
+  const { activePage, activeBoardId } = useMemo<{ activePage: ActivePage; activeBoardId: string | null }>(() => {
+    const cleanPath = location.pathname.replace(/\/$/, '') || '/';
+    if (cleanPath === '/' || cleanPath === '/dashboard') {
+      return { activePage: 'dashboard', activeBoardId: null };
+    }
+    if (cleanPath === '/boards') {
+      return { activePage: 'boards', activeBoardId: null };
+    }
+    if (cleanPath.startsWith('/boards/')) {
+      const bId = cleanPath.replace('/boards/', '');
+      return { activePage: 'board-detail', activeBoardId: bId };
+    }
+    if (cleanPath === '/tasks') {
+      return { activePage: 'tasks', activeBoardId: null };
+    }
+    if (cleanPath === '/users') {
+      return { activePage: 'users', activeBoardId: null };
+    }
+    if (cleanPath === '/notifications') {
+      return { activePage: 'notifications', activeBoardId: null };
+    }
+    if (cleanPath === '/profile') {
+      return { activePage: 'profile', activeBoardId: null };
+    }
+    if (cleanPath === '/settings') {
+      return { activePage: 'settings', activeBoardId: null };
+    }
+    return { activePage: 'dashboard', activeBoardId: null };
+  }, [location.pathname]);
 
   const [taskModalState, setTaskModalState] = useState<TaskModalState>({
     isOpen: false,
@@ -517,10 +549,54 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
   };
 
-  // Navigation Helper
+  // Navigation Helpers using real URL routes
+  const setActivePage = (page: ActivePage) => {
+    switch (page) {
+      case 'dashboard':
+        navigate('/dashboard');
+        break;
+      case 'boards':
+        navigate('/boards');
+        break;
+      case 'board-detail':
+        if (activeBoardId) {
+          navigate(`/boards/${activeBoardId}`);
+        } else if (boards.length > 0) {
+          navigate(`/boards/${boards[0].id}`);
+        } else {
+          navigate('/boards');
+        }
+        break;
+      case 'tasks':
+        navigate('/tasks');
+        break;
+      case 'notifications':
+        navigate('/notifications');
+        break;
+      case 'users':
+        navigate('/users');
+        break;
+      case 'profile':
+        navigate('/profile');
+        break;
+      case 'settings':
+        navigate('/settings');
+        break;
+      default:
+        navigate('/dashboard');
+    }
+  };
+
+  const setActiveBoardId = (id: string | null) => {
+    if (id) {
+      navigate(`/boards/${id}`);
+    } else {
+      navigate('/boards');
+    }
+  };
+
   const navigateToBoard = (boardId: string) => {
-    setActiveBoardId(boardId);
-    setActivePage('board-detail');
+    navigate(`/boards/${boardId}`);
   };
 
   // Modal Handlers
@@ -550,8 +626,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setTasks(initialTasks);
     setNotifications(initialNotifications);
     setActivityLogs(initialActivityLogs);
-    setActivePage('dashboard');
-    setActiveBoardId(null);
+    navigate('/dashboard');
   };
 
   const addComment = (taskId: string, content: string) => {

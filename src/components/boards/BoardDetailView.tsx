@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { useApp } from '../../context/AppContext';
 import { TaskCard } from './TaskCard';
@@ -53,14 +54,17 @@ export const BoardDetailView: React.FC = () => {
   const [editingColumnTitle, setEditingColumnTitle] = useState('');
   const [activeMenuColumnId, setActiveMenuColumnId] = useState<string | null>(null);
 
-  const currentBoard = boards.find((b) => b.id === activeBoardId);
+  const { boardId: paramBoardId } = useParams<{ boardId?: string }>();
+  const navigate = useNavigate();
+  const effectiveBoardId = paramBoardId || activeBoardId;
+  const currentBoard = boards.find((b) => b.id === effectiveBoardId);
 
   if (!currentBoard) {
     return (
       <div className="p-8 text-center">
         <p className="text-slate-500 mb-4">Board not found or has been deleted.</p>
         <button
-          onClick={() => setActivePage('boards')}
+          onClick={() => navigate('/boards')}
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium"
         >
           Back to Boards

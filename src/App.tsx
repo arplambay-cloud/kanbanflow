@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useApp } from './context/AppContext';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
@@ -19,7 +19,6 @@ import { ResetPasswordView } from './components/auth/ResetPasswordView';
 import { Kanban, Loader2 } from 'lucide-react';
 
 export const AppContent: React.FC = () => {
-  const { activePage } = useApp();
   const { user, loading } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [authView, setAuthView] = useState<'signin' | 'signup' | 'reset-password'>('signin');
@@ -70,29 +69,6 @@ export const AppContent: React.FC = () => {
     );
   }
 
-  const renderActiveView = () => {
-    switch (activePage) {
-      case 'dashboard':
-        return <DashboardView />;
-      case 'boards':
-        return <BoardsView />;
-      case 'board-detail':
-        return <BoardDetailView />;
-      case 'tasks':
-        return <TaskListView />;
-      case 'notifications':
-        return <NotificationsView />;
-      case 'users':
-        return <UsersView />;
-      case 'profile':
-        return <ProfileView />;
-      case 'settings':
-        return <SettingsView />;
-      default:
-        return <DashboardView />;
-    }
-  };
-
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 font-sans antialiased text-slate-900">
       {/* Sidebar Navigation */}
@@ -106,9 +82,20 @@ export const AppContent: React.FC = () => {
         {/* Top Header */}
         <Header onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
 
-        {/* Scrollable View Area */}
+        {/* Scrollable View Area via Routes */}
         <main className="flex-1 overflow-y-auto bg-slate-50/75">
-          {renderActiveView()}
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<DashboardView />} />
+            <Route path="/boards" element={<BoardsView />} />
+            <Route path="/boards/:boardId" element={<BoardDetailView />} />
+            <Route path="/tasks" element={<TaskListView />} />
+            <Route path="/notifications" element={<NotificationsView />} />
+            <Route path="/users" element={<UsersView />} />
+            <Route path="/profile" element={<ProfileView />} />
+            <Route path="/settings" element={<SettingsView />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
         </main>
       </div>
 
