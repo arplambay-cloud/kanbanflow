@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useUser, useClerk } from '@clerk/react';
+import { useUser, useClerk, useOrganization, useOrganizationList } from '@clerk/react';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { User } from '../types';
 
@@ -173,20 +173,46 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { error: null };
   };
 
+  const { organization } = useOrganization();
+  const { createOrganization, setActive } = useOrganizationList();
+
   const inviteMember = async (
     email: string,
     fullName: string,
     role: 'admin' | 'member' = 'member',
     jobTitle: string = 'Team Member'
   ): Promise<{ error: any; emailSent: boolean }> => {
-    if (isSupabaseConfigured && supabase) {
-      const redirectUrl = `${window.location.origin}/#type=recovery`;
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectUrl,
-      });
-      return { error, emailSent: !error };
+    const cleanEmail = email.toLowerCase().trim();
+    let emailSent = false;
+
+    // 1. Send via Clerk Organization Invitations (native outbound email)
+    if (organization) {
+      try {
+        const orgRole = role === 'admin' ? 'org:admin' : 'org:member';
+        await organization.inviteMember({
+          emailAddress: cleanEmail,
+          role: orgRole,
+        });
+        emailSent = true;
+      } catch (err: any) {
+        console.log('Clerk organization invite info:', err?.errors?.[0]?.message || err);
+      }
     }
-    return { error: null, emailSent: true };
+
+    // 2. Supabase password reset / magic link fallback
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const redirectUrl = `${window.location.origin}/#type=recovery`;
+        const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+          redirectTo: redirectUrl,
+        });
+        if (!error) emailSent = true;
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    return { error: null, emailSent };
   };
 
   return (
