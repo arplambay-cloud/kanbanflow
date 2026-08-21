@@ -76,4 +76,4 @@ export interface Workspace {
   createdAt: string;
 }
 
-export type ActivePage = 'dashboard' | 'boards' | 'board-detail' | 'tasks' | 'notifications' | 'profile' | 'settings';
+export type ActivePage = 'dashboard' | 'boards' | 'board-detail' | 'tasks' | 'notifications' | 'users' | 'profile' | 'settings';

@@ -6,6 +6,7 @@ import {
   Kanban,
   CheckSquare,
   Bell,
+  Users,
   User as UserIcon,
   Settings,
   ChevronDown,
@@ -51,6 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       icon: Bell,
       badge: unreadNotificationCount,
     },
+    { id: 'users', label: 'Users', icon: Users, badge: users.length },
     { id: 'profile', label: 'Profile', icon: UserIcon },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];

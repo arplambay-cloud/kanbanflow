@@ -8,6 +8,7 @@ import { BoardsView } from './components/boards/BoardsView';
 import { BoardDetailView } from './components/boards/BoardDetailView';
 import { TaskListView } from './components/tasks/TaskListView';
 import { NotificationsView } from './components/notifications/NotificationsView';
+import { UsersView } from './components/users/UsersView';
 import { ProfileView } from './components/profile/ProfileView';
 import { SettingsView } from './components/settings/SettingsView';
 import { TaskModal } from './components/tasks/TaskModal';
@@ -81,6 +82,8 @@ export const AppContent: React.FC = () => {
         return <TaskListView />;
       case 'notifications':
         return <NotificationsView />;
+      case 'users':
+        return <UsersView />;
       case 'profile':
         return <ProfileView />;
       case 'settings':
