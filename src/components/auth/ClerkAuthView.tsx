@@ -27,19 +27,11 @@ export const ClerkAuthView: React.FC = () => {
       </div>
 
       {/* Clerk Embedded Component */}
-      <div className="z-10 shadow-2xl rounded-2xl overflow-hidden animate-fade-in">
+      <div className="z-10 shadow-2xl rounded-2xl overflow-hidden animate-fade-in min-h-[400px] flex items-center justify-center">
         {isSignUp ? (
-          <SignUp
-            routing="hash"
-            signInUrl="#/sign-in"
-            fallbackRedirectUrl="/"
-          />
+          <SignUp fallbackRedirectUrl="/" />
         ) : (
-          <SignIn
-            routing="hash"
-            signUpUrl="#/sign-up"
-            fallbackRedirectUrl="/"
-          />
+          <SignIn fallbackRedirectUrl="/" />
         )}
       </div>
 
