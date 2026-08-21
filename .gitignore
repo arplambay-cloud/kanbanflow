@@ -1,4 +1,4 @@
-# Logs
+﻿# Logs
 logs
 *.log
 npm-debug.log*
@@ -12,6 +12,10 @@ node_modules
 */node_modules
 .pnp
 .pnp.js
+
+# Old versions
+2.0
+3.0
 
 # Build outputs
 dist

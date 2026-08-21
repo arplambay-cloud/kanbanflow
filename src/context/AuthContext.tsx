@@ -28,9 +28,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [session, setSession] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Safety fallback so the app never gets permanently stuck on a loading screen
+  useEffect(() => {
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 2000);
+    return () => clearTimeout(safetyTimer);
+  }, []);
+
   useEffect(() => {
     if (!isClerkLoaded) {
-      setLoading(true);
       return;
     }
 
