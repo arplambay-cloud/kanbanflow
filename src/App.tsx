@@ -12,6 +12,7 @@ import { UsersView } from './components/users/UsersView';
 import { ProfileView } from './components/profile/ProfileView';
 import { SettingsView } from './components/settings/SettingsView';
 import { TaskModal } from './components/tasks/TaskModal';
+import { OnboardingModal } from './components/onboarding/OnboardingModal';
 import { ClerkAuthView } from './components/auth/ClerkAuthView';
 import { Kanban, Loader2 } from 'lucide-react';
 
@@ -70,6 +71,9 @@ export const AppContent: React.FC = () => {
 
       {/* Global Task Create/Edit Modal */}
       <TaskModal />
+
+      {/* First-time User Onboarding & Workspace Setup Wizard */}
+      <OnboardingModal />
     </div>
   );
 };

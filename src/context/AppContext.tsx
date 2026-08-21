@@ -22,6 +22,7 @@ import {
   initialNotifications,
   initialActivityLogs,
 } from '../data/initialData';
+import { useAuth } from './AuthContext';
 
 interface TaskModalState {
   isOpen: boolean;
@@ -84,14 +85,14 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const LOCAL_STORAGE_KEYS = {
-  WORKSPACE: 'kf_workspace_v2',
-  USERS: 'kf_users_v2',
-  CURRENT_USER_ID: 'kf_current_user_id_v2',
-  BOARDS: 'kf_boards_v2',
-  COLUMNS: 'kf_columns_v2',
-  TASKS: 'kf_tasks_v2',
-  NOTIFICATIONS: 'kf_notifications_v2',
-  ACTIVITY: 'kf_activity_v2',
+  WORKSPACE: 'kf_workspace_v3',
+  USERS: 'kf_users_v3',
+  CURRENT_USER_ID: 'kf_current_user_id_v3',
+  BOARDS: 'kf_boards_v3',
+  COLUMNS: 'kf_columns_v3',
+  TASKS: 'kf_tasks_v3',
+  NOTIFICATIONS: 'kf_notifications_v3',
+  ACTIVITY: 'kf_activity_v3',
 };
 
 function loadStorage<T>(key: string, defaultValue: T): T {
@@ -107,6 +108,8 @@ function loadStorage<T>(key: string, defaultValue: T): T {
 }
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user: authUser } = useAuth();
+
   const [workspace, setWorkspace] = useState<Workspace>(() =>
     loadStorage(LOCAL_STORAGE_KEYS.WORKSPACE, initialWorkspace)
   );
@@ -116,7 +119,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   );
 
   const [currentUserId, setCurrentUserId] = useState<string>(() =>
-    loadStorage(LOCAL_STORAGE_KEYS.CURRENT_USER_ID, initialUsers[0].id)
+    loadStorage(LOCAL_STORAGE_KEYS.CURRENT_USER_ID, initialUsers[0]?.id || '')
   );
 
   const [boards, setBoards] = useState<Board[]>(() =>
@@ -178,8 +181,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     task: null,
   });
 
+  // Sync authenticated Clerk user into workspace users list
+  useEffect(() => {
+    if (authUser) {
+      setUsers((prev) => {
+        const exists = prev.find((u) => u.id === authUser.id || (authUser.email && u.email === authUser.email));
+        if (exists) {
+          return prev.map((u) => (u.id === exists.id ? { ...u, ...authUser } : u));
+        }
+        return [authUser, ...prev];
+      });
+      setCurrentUserId(authUser.id);
+    }
+  }, [authUser]);
+
+  const defaultAdminUser: User = {
+    id: authUser?.id || 'admin-user',
+    name: authUser?.name || 'Workspace Admin',
+    email: authUser?.email || 'admin@workspace.io',
+    avatar: authUser?.avatar || '',
+    role: (authUser?.role as 'admin' | 'member') || 'admin',
+    jobTitle: authUser?.jobTitle || 'Team Lead',
+  };
+
   // Current active user object
-  const currentUser = users.find((u) => u.id === currentUserId) || users[0] || initialUsers[0];
+  const currentUser = authUser || users.find((u) => u.id === currentUserId) || users[0] || defaultAdminUser;
 
   // Persist to localStorage whenever state changes
   useEffect(() => {
