@@ -21,11 +21,6 @@ export const NotFoundView: React.FC = () => {
         <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white font-display">
           Kanban<span className="text-indigo-400">Flow</span>
         </h1>
-
-        {/* Simple Description */}
-        <p className="text-xs sm:text-sm text-slate-400 mt-2 font-medium leading-relaxed">
-          Collaborative workspace for agile teams and project delivery.
-        </p>
       </div>
     </div>
   );
