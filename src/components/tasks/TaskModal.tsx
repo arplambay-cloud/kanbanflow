@@ -227,37 +227,30 @@ export const TaskModal: React.FC = () => {
           .from('attachments')
           .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
-        if (!uploadError) {
-          const { data: publicUrlData } = supabase.storage
-            .from('attachments')
-            .getPublicUrl(filePath);
-
-          addAttachment(task.id, {
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            url: publicUrlData?.publicUrl || filePath,
-          });
+        if (uploadError) {
+          alert('Failed to upload file to storage: ' + uploadError.message);
           e.target.value = '';
           return;
         }
-      }
-    } catch (err) {
-      console.warn('Supabase storage upload fallback:', err);
-    }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
+        const { data: signedData, error: signErr } = await supabase.storage
+          .from('attachments')
+          .createSignedUrl(filePath, 60 * 60 * 24 * 365);
+
+        const url = (!signErr && signedData?.signedUrl) ? signedData.signedUrl : filePath;
+
         addAttachment(task.id, {
           name: file.name,
           size: file.size,
           type: file.type,
-          url: reader.result,
+          url,
         });
+        e.target.value = '';
+        return;
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      alert('File upload error: ' + (err.message || 'Unknown error occurred.'));
+    }
 
     // Reset input
     e.target.value = '';

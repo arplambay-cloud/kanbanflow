@@ -90,40 +90,33 @@ export const ProfileView: React.FC = () => {
           .from('avatars')
           .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
-        if (!uploadError) {
-          const { data: publicUrlData } = supabase.storage
-            .from('avatars')
-            .getPublicUrl(filePath);
-
-          const publicUrl = publicUrlData?.publicUrl || filePath;
-          setAvatar(publicUrl);
-          updateUser(currentUser.id, { avatar: publicUrl });
-
-          await supabase
-            .from('profiles')
-            .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
-            .eq('id', currentUser.id);
-
-          await supabase.auth.updateUser({
-            data: { avatar_url: publicUrl },
-          });
-
+        if (uploadError) {
+          alert('Photo upload failed: ' + uploadError.message);
           return;
         }
-      }
-    } catch (err) {
-      console.warn('Supabase avatar upload fallback:', err);
-    }
 
-    const reader = new FileReader();
-    reader.onload = async () => {
-      if (typeof reader.result === 'string') {
-        const dataUrl = reader.result;
-        setAvatar(dataUrl);
-        updateUser(currentUser.id, { avatar: dataUrl });
+        const { data: publicUrlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+        const publicUrl = publicUrlData?.publicUrl || filePath;
+        setAvatar(publicUrl);
+        updateUser(currentUser.id, { avatar: publicUrl });
+
+        await supabase
+          .from('profiles')
+          .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+          .eq('id', currentUser.id);
+
+        await supabase.auth.updateUser({
+          data: { avatar_url: publicUrl },
+        });
+
+        return;
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      alert('Photo upload failed: ' + (err.message || 'Unknown error occurred'));
+    }
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {

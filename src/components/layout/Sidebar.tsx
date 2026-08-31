@@ -42,6 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const activeUser = authUser || currentUser;
+  const isAdmin = activeUser?.role === 'admin';
 
   const navItems: { id: ActivePage; label: string; icon: React.FC<{ className?: string }>; badge?: number }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -53,9 +54,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       icon: Bell,
       badge: unreadNotificationCount,
     },
-    { id: 'users', label: 'Users', icon: Users },
-    { id: 'profile', label: 'Profile', icon: UserIcon },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    ...(isAdmin ? [{ id: 'users' as ActivePage, label: 'Users', icon: Users }] : []),
+    { id: 'profile' as ActivePage, label: 'Profile', icon: UserIcon },
+    ...(isAdmin ? [{ id: 'settings' as ActivePage, label: 'Settings', icon: Settings }] : []),
   ];
 
   const handleNavClick = (page: ActivePage) => {

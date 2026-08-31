@@ -691,7 +691,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
 
     if (targetBoard) {
-      logActivity('created_board', targetBoard.title, targetBoard.title, 'Deleted board');
+      logActivity('deleted_board', targetBoard.title, targetBoard.title, 'Deleted board');
     }
 
     if (activeBoardId === id) {
@@ -911,7 +911,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     if (task) {
       const board = boards.find((b) => b.id === task.boardId);
-      logActivity('created_task', task.title, board?.title, 'Deleted task "' + task.title + '"');
+      logActivity('deleted_task', task.title, board?.title, 'Deleted task "' + task.title + '"');
     }
   };
 

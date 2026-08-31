@@ -142,27 +142,22 @@ export const UsersView: React.FC = () => {
           .from('avatars')
           .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
-        if (!uploadError) {
-          const { data: publicUrlData } = supabase.storage
-            .from('avatars')
-            .getPublicUrl(filePath);
-
-          const publicUrl = publicUrlData?.publicUrl || filePath;
-          setTargetAvatar(publicUrl);
+        if (uploadError) {
+          alert('Photo upload failed: ' + uploadError.message);
           return;
         }
-      }
-    } catch (err) {
-      console.warn('Supabase avatar upload fallback:', err);
-    }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setTargetAvatar(reader.result);
+        const { data: publicUrlData } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+        const publicUrl = publicUrlData?.publicUrl || filePath;
+        setTargetAvatar(publicUrl);
+        return;
       }
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      alert('Photo upload failed: ' + (err.message || 'Unknown error occurred'));
+    }
   };
 
   const generatePassword = () => {

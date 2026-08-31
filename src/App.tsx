@@ -136,7 +136,14 @@ export const AppContent: React.FC = () => {
                 }
               />
               <Route path="/profile" element={<ProfileView />} />
-              <Route path="/settings" element={<SettingsView />} />
+              <Route
+                path="/settings"
+                element={
+                  <RequireAdmin>
+                    <SettingsView />
+                  </RequireAdmin>
+                }
+              />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </ErrorBoundary>

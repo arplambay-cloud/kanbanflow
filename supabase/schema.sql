@@ -289,8 +289,8 @@ create policy "Allow authenticated all on activity_logs" on public.activity_logs
 -- 13. STORAGE BUCKETS & POLICIES
 -- ------------------------------------------------------------------------------
 insert into storage.buckets (id, name, public)
-values ('attachments', 'attachments', true), ('avatars', 'avatars', true)
-on conflict (id) do update set public = true;
+values ('attachments', 'attachments', false), ('avatars', 'avatars', true)
+on conflict (id) do update set public = false;
 
 drop policy if exists "Read attachments" on storage.objects;
 drop policy if exists "Public read avatars" on storage.objects;
@@ -301,4 +301,3 @@ create policy "Read attachments" on storage.objects for select using (bucket_id 
 create policy "Public read avatars" on storage.objects for select using (bucket_id = 'avatars');
 create policy "Authenticated upload objects" on storage.objects for insert with check (bucket_id in ('attachments', 'avatars') and auth.role() = 'authenticated');
 create policy "Owner deletes own objects" on storage.objects for delete using (bucket_id in ('attachments', 'avatars') and (owner = auth.uid() or public.is_admin()));
-
