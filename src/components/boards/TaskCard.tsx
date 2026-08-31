@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { Task, Column } from '../../types';
 import { useApp } from '../../context/AppContext';
@@ -19,20 +19,24 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, columns }) => {
   const [showMenu, setShowMenu] = React.useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
 
-  const assignee = users.find((u) => u.id === task.assigneeId);
+  if (!task || !task.id) return null;
+
+  const assignee = (users || []).find((u) => u && u.id === task.assigneeId);
   const overdue = task.dueDate ? isOverdue(task.dueDate) : false;
   const commentsCount = task.comments?.length || 0;
   const attachmentsCount = task.attachments?.length || 0;
+  const safePriority = task.priority || 'medium';
+  const safeId = String(task.id);
 
   // Next column for quick move button
-  const currentColumnIndex = columns?.findIndex((c) => c.id === task.columnId) ?? -1;
+  const currentColumnIndex = (columns || []).findIndex((c) => c && c.id === task.columnId) ?? -1;
   const nextColumn =
     columns && currentColumnIndex >= 0 && currentColumnIndex < columns.length - 1
       ? columns[currentColumnIndex + 1]
       : null;
 
   return (
-    <Draggable draggableId={task.id} index={index}>
+    <Draggable draggableId={safeId} index={index}>
       {(provided, snapshot) => (
         <div
           ref={provided.innerRef}
@@ -47,7 +51,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, columns }) => {
         >
           {/* Top Row: Priority Badge & Quick Action Menu */}
           <div className="flex items-center justify-between gap-2 mb-2">
-            <PriorityBadge priority={task.priority} size="sm" />
+            <PriorityBadge priority={safePriority} size="sm" />
 
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
@@ -101,76 +105,79 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, columns }) => {
           </div>
 
           {/* Task Title */}
-          <h4 className="text-xs sm:text-sm font-semibold text-slate-900 leading-snug line-clamp-2 mb-1.5">
-            {task.title}
+          <h4 className="text-xs font-semibold text-slate-800 line-clamp-2 leading-relaxed mb-1.5 group-hover:text-indigo-600 transition-colors">
+            {task.title || 'Untitled Task'}
           </h4>
 
-          {/* Description Preview (if present) */}
+          {/* Task Description Preview */}
           {task.description && (
-            <p className="text-[11px] text-slate-500 line-clamp-2 mb-3 leading-relaxed">
+            <p className="text-[11px] text-slate-400 line-clamp-2 mb-3 leading-normal">
               {task.description}
             </p>
           )}
 
-          {/* Bottom Row: Metadata badges & Assignee Avatar */}
-          <div className="flex items-center justify-between pt-2 mt-1 border-t border-slate-100/80">
-            {/* Left metadata: Due Date, Comments, Attachments */}
-            <div className="flex items-center gap-2 flex-wrap">
+          {/* Footer Metadata */}
+          <div className="flex items-center justify-between pt-2 border-t border-slate-100/80 text-[11px] text-slate-400">
+            <div className="flex items-center gap-2.5">
+              {/* Due Date */}
               {task.dueDate && (
                 <div
-                  className={`inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-md ${
-                    overdue
-                      ? 'text-rose-700 bg-rose-50 font-semibold'
-                      : 'text-slate-500 bg-slate-50'
+                  className={`inline-flex items-center gap-1 font-medium ${
+                    overdue ? 'text-rose-600 font-semibold' : 'text-slate-500'
                   }`}
-                  title={`Due: ${task.dueDate}`}
+                  title={overdue ? 'Task is Overdue!' : 'Due Date'}
                 >
                   <Calendar className="w-3 h-3" />
                   <span>{formatDate(task.dueDate)}</span>
                 </div>
               )}
 
-              {commentsCount > 0 && (
-                <div
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 hover:text-slate-600"
-                  title={`${commentsCount} comments`}
-                >
-                  <MessageSquare className="w-3 h-3" />
-                  <span>{commentsCount}</span>
-                </div>
-              )}
-
+              {/* Attachments counter */}
               {attachmentsCount > 0 && (
-                <div
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 hover:text-slate-600"
-                  title={`${attachmentsCount} attachments`}
-                >
+                <div className="flex items-center gap-0.5 text-slate-400" title={`${attachmentsCount} attachments`}>
                   <Paperclip className="w-3 h-3" />
                   <span>{attachmentsCount}</span>
                 </div>
               )}
+
+              {/* Comments counter */}
+              {commentsCount > 0 && (
+                <div className="flex items-center gap-0.5 text-slate-400" title={`${commentsCount} comments`}>
+                  <MessageSquare className="w-3 h-3" />
+                  <span>{commentsCount}</span>
+                </div>
+              )}
             </div>
 
-            {/* Assignee */}
-            <div className="shrink-0" title={assignee ? `Assigned to ${assignee.name}` : 'Unassigned'}>
+            {/* Assignee Avatar */}
+            {assignee ? (
               <UserAvatar user={assignee} size="xs" />
-            </div>
+            ) : (
+              <div
+                className="w-5 h-5 rounded-full border border-dashed border-slate-300 flex items-center justify-center text-[10px] text-slate-400"
+                title="Unassigned"
+              >
+                +
+              </div>
+            )}
           </div>
 
-          {/* In-App Confirmation Dialog */}
-          <ConfirmDialog
-            isOpen={isConfirmOpen}
-            title="Delete Task"
-            message={`Are you sure you want to delete "${task.title}"? This action cannot be undone.`}
-            confirmLabel="Delete"
-            cancelLabel="Cancel"
-            confirmVariant="danger"
-            onConfirm={() => {
-              deleteTask(task.id);
-              setIsConfirmOpen(false);
-            }}
-            onCancel={() => setIsConfirmOpen(false)}
-          />
+          {/* Delete Task In-App Modal */}
+          {isConfirmOpen && (
+            <ConfirmDialog
+              isOpen={isConfirmOpen}
+              title="Delete Task"
+              message={`Are you sure you want to delete "${task.title}"? This action cannot be undone.`}
+              confirmLabel="Delete Task"
+              cancelLabel="Cancel"
+              confirmVariant="danger"
+              onConfirm={() => {
+                deleteTask(task.id);
+                setIsConfirmOpen(false);
+              }}
+              onCancel={() => setIsConfirmOpen(false)}
+            />
+          )}
         </div>
       )}
     </Draggable>

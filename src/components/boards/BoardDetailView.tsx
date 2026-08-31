@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { useApp } from '../../context/AppContext';
@@ -9,18 +9,15 @@ import {
   MoreHorizontal,
   Edit2,
   Trash2,
-  Filter,
   Search,
-  Users,
   Kanban,
-  CheckCircle2,
-  Sparkles,
+  AlertCircle,
 } from 'lucide-react';
-import { UserAvatar } from '../common/UserAvatar';
 import { CustomDropdown } from '../common/CustomDropdown';
 import { ConfirmDialog } from '../common/ConfirmDialog';
+import { ErrorBoundary } from '../common/ErrorBoundary';
 
-export const BoardDetailView: React.FC = () => {
+const BoardDetailContent: React.FC = () => {
   const {
     boards,
     activeBoardId,
@@ -40,6 +37,8 @@ export const BoardDetailView: React.FC = () => {
   const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState('');
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
+  const [editingColumnTitle, setEditingColumnTitle] = useState('');
+  const [activeMenuColumnId, setActiveMenuColumnId] = useState<string | null>(null);
   const [columnToDelete, setColumnToDelete] = useState<{ id: string; title: string; taskCount: number } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -53,40 +52,45 @@ export const BoardDetailView: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-  const [editingColumnTitle, setEditingColumnTitle] = useState('');
-  const [activeMenuColumnId, setActiveMenuColumnId] = useState<string | null>(null);
 
   const { boardId: paramBoardId } = useParams<{ boardId?: string }>();
   const navigate = useNavigate();
   const effectiveBoardId = paramBoardId || activeBoardId;
-  const currentBoard = boards.find((b) => b.id === effectiveBoardId);
+  const currentBoard = (boards || []).find((b) => b && b.id === effectiveBoardId);
 
   if (!currentBoard) {
     return (
-      <div className="p-8 text-center">
-        <p className="text-slate-500 mb-4">Board not found or has been deleted.</p>
+      <div className="min-h-[400px] flex flex-col items-center justify-center p-8 text-center bg-white rounded-xl border border-slate-200 m-6">
+        <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
+          <Kanban className="w-6 h-6" />
+        </div>
+        <h3 className="text-base font-bold text-slate-800 mb-1">Board Not Found</h3>
+        <p className="text-xs text-slate-500 max-w-sm mb-4">
+          This board may have been deleted or the link is incorrect.
+        </p>
         <button
           onClick={() => navigate('/boards')}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium"
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer"
         >
-          Back to Boards
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to All Boards</span>
         </button>
       </div>
     );
   }
 
   // Board's columns sorted by order
-  const boardColumns = columns
-    .filter((c) => c.boardId === currentBoard.id)
-    .sort((a, b) => a.order - b.order);
+  const boardColumns = (columns || [])
+    .filter((c) => c && c.boardId === currentBoard.id)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
-  // Filter tasks
-  const filteredTasks = tasks.filter((t) => {
-    if (t.boardId !== currentBoard.id) return false;
+  // Filter tasks safely
+  const filteredTasks = (tasks || []).filter((t) => {
+    if (!t || !t.id || t.boardId !== currentBoard.id) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchTitle = t.title.toLowerCase().includes(q);
-      const matchDesc = t.description?.toLowerCase().includes(q);
+      const matchTitle = (t.title || '').toLowerCase().includes(q);
+      const matchDesc = (t.description || '').toLowerCase().includes(q);
       if (!matchTitle && !matchDesc) return false;
     }
     if (filterAssigneeId !== 'all') {
@@ -97,16 +101,20 @@ export const BoardDetailView: React.FC = () => {
   });
 
   const handleDragEnd = (result: DropResult) => {
-    const { destination, source, draggableId } = result;
-    if (!destination) return;
-    if (
-      destination.droppableId === source.droppableId &&
-      destination.index === source.index
-    ) {
-      return;
-    }
+    try {
+      const { destination, source, draggableId } = result;
+      if (!destination) return;
+      if (
+        destination.droppableId === source.droppableId &&
+        destination.index === source.index
+      ) {
+        return;
+      }
 
-    moveTask(draggableId, destination.droppableId, destination.index);
+      moveTask(draggableId, destination.droppableId, destination.index);
+    } catch (e) {
+      console.warn('Drag end error:', e);
+    }
   };
 
   const handleAddColumnSubmit = (e: React.FormEvent) => {
@@ -131,8 +139,8 @@ export const BoardDetailView: React.FC = () => {
           {/* Board Title & Back */}
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setActivePage('boards')}
-              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              onClick={() => navigate('/boards')}
+              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
               title="Back to all boards"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -141,7 +149,7 @@ export const BoardDetailView: React.FC = () => {
             <div className="flex items-center gap-2.5">
               <span
                 className="w-3.5 h-3.5 rounded-md shrink-0 shadow-sm"
-                style={{ backgroundColor: currentBoard.color || '#7c3bed' }}
+                style={{ backgroundColor: currentBoard.color || '#6366f1' }}
               />
               <div>
                 <h2 className="font-bold text-slate-900 text-base sm:text-lg flex items-center gap-2">
@@ -170,16 +178,11 @@ export const BoardDetailView: React.FC = () => {
                 placeholder="Search board..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-9 pl-8 pr-14 rounded-lg border border-slate-200 text-xs bg-slate-50 focus:bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
+                className="w-full pl-8 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 focus:bg-white transition-all"
               />
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 pointer-events-none select-none">
-                <kbd className="inline-flex items-center justify-center min-w-[16px] h-4.5 px-1 text-[10px] font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded font-mono shadow-2xs">
-                  ⌘
-                </kbd>
-                <kbd className="inline-flex items-center justify-center min-w-[16px] h-4.5 px-1 text-[9px] font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded font-mono shadow-2xs">
-                  K
-                </kbd>
-              </div>
+              <kbd className="hidden sm:inline-flex absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 font-sans border border-slate-200 bg-white px-1 rounded shadow-2xs">
+                Ctrl+K
+              </kbd>
             </div>
 
             {/* Assignee Filter Dropdown */}
@@ -190,7 +193,7 @@ export const BoardDetailView: React.FC = () => {
               options={[
                 { value: 'all', label: 'All Members' },
                 { value: 'unassigned', label: 'Unassigned' },
-                ...users.map((u) => ({ value: u.id, label: u.name })),
+                ...(users || []).map((u) => ({ value: u.id, label: u.name || 'Member' })),
               ]}
               className="min-w-[130px]"
             />
@@ -198,7 +201,7 @@ export const BoardDetailView: React.FC = () => {
             {/* Add Task Button */}
             <button
               onClick={() => openTaskModal(undefined, currentBoard.id)}
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg font-medium text-xs shadow-sm transition-all"
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg font-medium text-xs shadow-sm transition-all cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add Task</span>
@@ -213,7 +216,7 @@ export const BoardDetailView: React.FC = () => {
           {boardColumns.map((column) => {
             const columnTasks = filteredTasks
               .filter((t) => t.columnId === column.id)
-              .sort((a, b) => a.order - b.order);
+              .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
             const isEditing = editingColumnId === column.id;
             const isMenuOpen = activeMenuColumnId === column.id;
@@ -255,7 +258,7 @@ export const BoardDetailView: React.FC = () => {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => openTaskModal(undefined, currentBoard.id, column.id)}
-                      className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-md transition-colors"
+                      className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-md transition-colors cursor-pointer"
                       title="Add task in this column"
                     >
                       <Plus className="w-4 h-4" />
@@ -266,7 +269,7 @@ export const BoardDetailView: React.FC = () => {
                         onClick={() =>
                           setActiveMenuColumnId(isMenuOpen ? null : column.id)
                         }
-                        className="p-1 text-slate-400 hover:text-slate-700 hover:bg-white rounded-md transition-colors"
+                        className="p-1 text-slate-400 hover:text-slate-700 hover:bg-white rounded-md transition-colors cursor-pointer"
                         title="Column settings"
                       >
                         <MoreHorizontal className="w-4 h-4" />
@@ -283,7 +286,7 @@ export const BoardDetailView: React.FC = () => {
                               setEditingColumnTitle(column.title);
                               setActiveMenuColumnId(null);
                             }}
-                            className="w-full px-3 py-1.5 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                            className="w-full px-3 py-1.5 text-left text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                           >
                             <Edit2 className="w-3.5 h-3.5 text-slate-400" />
                             <span>Rename Column</span>
@@ -298,7 +301,7 @@ export const BoardDetailView: React.FC = () => {
                                 taskCount: columnTasks.length,
                               });
                             }}
-                            className="w-full px-3 py-1.5 text-left text-rose-600 hover:bg-rose-50 flex items-center gap-2"
+                            className="w-full px-3 py-1.5 text-left text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                             <span>Delete Column</span>
@@ -332,7 +335,7 @@ export const BoardDetailView: React.FC = () => {
                       {/* Quick "+ Add Card" inline trigger */}
                       <button
                         onClick={() => openTaskModal(undefined, currentBoard.id, column.id)}
-                        className="w-full py-2 px-3 text-xs font-medium text-slate-500 hover:text-indigo-600 hover:bg-white/80 rounded-lg flex items-center justify-center gap-1.5 transition-all border border-dashed border-slate-300 hover:border-indigo-400"
+                        className="w-full py-2 px-3 text-xs font-medium text-slate-500 hover:text-indigo-600 hover:bg-white/80 rounded-lg flex items-center justify-center gap-1.5 transition-all border border-dashed border-slate-300 hover:border-indigo-400 cursor-pointer"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Add Task</span>
@@ -349,55 +352,55 @@ export const BoardDetailView: React.FC = () => {
             {isAddingColumn ? (
               <form
                 onSubmit={handleAddColumnSubmit}
-                className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-card animate-fade-in"
+                className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2.5 animate-fade-in"
               >
                 <input
                   type="text"
                   autoFocus
-                  required
-                  placeholder="Column name (e.g. Blocked, In Review)..."
+                  placeholder="Column Title (e.g. In Review)"
                   value={newColumnTitle}
                   onChange={(e) => setNewColumnTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent mb-2.5"
+                  className="w-full px-3 py-2 text-xs font-medium border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-slate-800"
                 />
-                <div className="flex items-center gap-2">
-                  <button
-                    type="submit"
-                    className="flex-1 py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all"
-                  >
-                    Add Column
-                  </button>
+                <div className="flex items-center gap-2 justify-end">
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsAddingColumn(false);
-                      setNewColumnTitle('');
-                    }}
-                    className="py-1.5 px-3 text-slate-600 hover:bg-slate-100 rounded-lg text-xs font-medium transition-colors"
+                    onClick={() => setIsAddingColumn(false)}
+                    className="px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                   >
                     Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-md shadow-2xs transition-all cursor-pointer"
+                  >
+                    Add Column
                   </button>
                 </div>
               </form>
             ) : (
               <button
                 onClick={() => setIsAddingColumn(true)}
-                className="w-full py-3.5 px-4 bg-slate-200/50 hover:bg-slate-200/80 active:bg-slate-300/60 rounded-xl border border-dashed border-slate-300 text-slate-600 hover:text-slate-900 font-semibold text-xs flex items-center justify-center gap-2 transition-all group"
+                className="w-full py-3 px-4 rounded-xl border border-dashed border-slate-300 hover:border-indigo-500 hover:bg-indigo-50/30 text-slate-500 hover:text-indigo-600 flex items-center justify-center gap-2 text-xs font-semibold transition-all cursor-pointer"
               >
-                <Plus className="w-4 h-4 text-slate-500 group-hover:text-indigo-600 group-hover:rotate-90 transition-transform duration-200" />
-                <span>Add Column</span>
+                <Plus className="w-4 h-4" />
+                <span>Add Another Column</span>
               </button>
             )}
           </div>
         </div>
       </DragDropContext>
 
-      {/* Delete Column In-App Confirmation Dialog */}
+      {/* Delete Column Confirmation Modal */}
       {columnToDelete && (
         <ConfirmDialog
           isOpen={!!columnToDelete}
           title="Delete Column"
-          message={`Are you sure you want to delete column "${columnToDelete.title}" and its ${columnToDelete.taskCount} task(s)? This action cannot be undone.`}
+          message={`Are you sure you want to delete "${columnToDelete.title}"? ${
+            columnToDelete.taskCount > 0
+              ? `This will also remove all ${columnToDelete.taskCount} tasks inside it.`
+              : 'This action cannot be undone.'
+          }`}
           confirmLabel="Delete Column"
           cancelLabel="Cancel"
           confirmVariant="danger"
@@ -409,5 +412,13 @@ export const BoardDetailView: React.FC = () => {
         />
       )}
     </div>
+  );
+};
+
+export const BoardDetailView: React.FC = () => {
+  return (
+    <ErrorBoundary fallbackTitle="Unable to display Board">
+      <BoardDetailContent />
+    </ErrorBoundary>
   );
 };

@@ -84,8 +84,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
     }
   };
 
-  const userNotifications = notifications
-    .filter((n) => n.recipientId === currentUser.id)
+  const userNotifications = (notifications || [])
+    .filter((n) => n && n.recipientId === (currentUser?.id || activeUser?.id))
     .slice(0, 5);
 
   return (

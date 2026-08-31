@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { User } from '../../types';
 
 interface UserAvatarProps {
-  user?: User;
+  user?: Partial<User> | null;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   showName?: boolean;
   showRole?: boolean;
@@ -51,12 +51,14 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
     xl: 'w-14 h-14 text-base',
   };
 
-  const initials = user.name
+  const safeName = (user.name || 'User').trim() || 'User';
+  const initials = safeName
     .split(' ')
+    .filter(Boolean)
     .map((n) => n[0])
     .join('')
     .toUpperCase()
-    .substring(0, 2);
+    .substring(0, 2) || 'U';
 
   return (
     <div className={`inline-flex items-center gap-2 ${className}`}>
@@ -64,7 +66,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
         {user.avatar && !imageError ? (
           <img
             src={user.avatar}
-            alt={user.name}
+            alt={safeName}
             className={`${sizeClasses[size]} rounded-full object-cover ring-2 ring-white shadow-sm`}
             onError={() => setImageError(true)}
           />
@@ -81,12 +83,12 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
         <div className="flex flex-col min-w-0">
           {showName && (
             <span className="text-sm font-medium text-slate-800 truncate">
-              {user.name}
+              {safeName}
             </span>
           )}
           {showRole && (
             <span className="text-xs text-slate-500 truncate">
-              {user.jobTitle || user.role}
+              {user.jobTitle || user.role || 'Member'}
             </span>
           )}
         </div>

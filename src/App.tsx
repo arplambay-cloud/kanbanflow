@@ -16,6 +16,7 @@ import { OnboardingModal } from './components/onboarding/OnboardingModal';
 import { SecretLoginView } from './components/auth/SecretLoginView';
 import { NotFoundView } from './components/auth/NotFoundView';
 import { ResetPasswordView } from './components/auth/ResetPasswordView';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Kanban, Loader2 } from 'lucide-react';
 
 const SECRET_LOGIN_PATH = (
@@ -116,18 +117,20 @@ export const AppContent: React.FC = () => {
 
         {/* Scrollable View Area via Routes */}
         <main className="flex-1 overflow-y-auto bg-slate-50/75">
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<DashboardView />} />
-            <Route path="/boards" element={<BoardsView />} />
-            <Route path="/boards/:boardId" element={<BoardDetailView />} />
-            <Route path="/tasks" element={<TaskListView />} />
-            <Route path="/notifications" element={<NotificationsView />} />
-            <Route path="/users" element={<UsersView />} />
-            <Route path="/profile" element={<ProfileView />} />
-            <Route path="/settings" element={<SettingsView />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
+          <ErrorBoundary fallbackTitle="Application View Error">
+            <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<DashboardView />} />
+              <Route path="/boards" element={<BoardsView />} />
+              <Route path="/boards/:boardId" element={<BoardDetailView />} />
+              <Route path="/tasks" element={<TaskListView />} />
+              <Route path="/notifications" element={<NotificationsView />} />
+              <Route path="/users" element={<UsersView />} />
+              <Route path="/profile" element={<ProfileView />} />
+              <Route path="/settings" element={<SettingsView />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </ErrorBoundary>
         </main>
       </div>
 
