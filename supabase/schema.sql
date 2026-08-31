@@ -333,11 +333,11 @@ create policy "Members manage tasks" on public.tasks
 create policy "Members read comments" on public.task_comments
   for select using (auth.role() = 'authenticated');
 create policy "Members post own comments" on public.task_comments
-  for insert with check (user_id = auth.uid()::text);
+  for insert with check (user_id = auth.uid());
 create policy "Authors update own comments" on public.task_comments
-  for update using (user_id = auth.uid()::text or public.is_admin());
+  for update using (user_id = auth.uid() or public.is_admin());
 create policy "Authors delete own comments" on public.task_comments
-  for delete using (user_id = auth.uid()::text or public.is_admin());
+  for delete using (user_id = auth.uid() or public.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- TASK ATTACHMENTS — anyone may read and upload; only the uploader (or an admin)
@@ -365,7 +365,7 @@ create policy "Allow recipient delete notifications" on public.notifications for
 create policy "Members read activity" on public.activity_logs
   for select using (auth.role() = 'authenticated');
 create policy "Members append own activity" on public.activity_logs
-  for insert with check (user_id = auth.uid()::text);
+  for insert with check (user_id = auth.uid());
 create policy "Admins prune activity" on public.activity_logs
   for delete using (public.is_admin());
 
@@ -384,4 +384,6 @@ drop policy if exists "Owner deletes own objects" on storage.objects;
 create policy "Read attachments" on storage.objects for select using (bucket_id = 'attachments' and auth.role() = 'authenticated');
 create policy "Public read avatars" on storage.objects for select using (bucket_id = 'avatars');
 create policy "Authenticated upload objects" on storage.objects for insert with check (bucket_id in ('attachments', 'avatars') and auth.role() = 'authenticated');
-create policy "Owner deletes own objects" on storage.objects for delete using (bucket_id in ('attachments', 'avatars') and (owner = auth.uid() or public.is_admin()));
+-- `owner` is uuid on current Supabase, but cast both sides so this works
+-- regardless of the storage schema version on the project.
+create policy "Owner deletes own objects" on storage.objects for delete using (bucket_id in ('attachments', 'avatars') and (owner::text = auth.uid()::text or public.is_admin()));
