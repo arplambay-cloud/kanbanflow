@@ -31,6 +31,7 @@ const BoardDetailContent: React.FC = () => {
     openTaskModal,
     users,
     setIsDragging,
+    currentUser,
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -299,20 +300,22 @@ const BoardDetailContent: React.FC = () => {
                             <span>Rename Column</span>
                           </button>
 
-                          <button
-                            onClick={() => {
-                              setActiveMenuColumnId(null);
-                              setColumnToDelete({
-                                id: column.id,
-                                title: column.title,
-                                taskCount: columnTasks.length,
-                              });
-                            }}
-                            className="w-full px-3 py-1.5 text-left text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Delete Column</span>
-                          </button>
+                          {currentUser?.role === 'admin' && (
+                            <button
+                              onClick={() => {
+                                setActiveMenuColumnId(null);
+                                setColumnToDelete({
+                                  id: column.id,
+                                  title: column.title,
+                                  taskCount: columnTasks.length,
+                                });
+                              }}
+                              className="w-full px-3 py-1.5 text-left text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Delete Column</span>
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>

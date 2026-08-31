@@ -24,6 +24,7 @@ import {
 } from '../data/initialData';
 import { useAuth } from './AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import { reorderTasks, tasksNeedingPersist } from '../utils/taskReorder';
 
 interface TaskModalState {
   isOpen: boolean;
@@ -596,7 +597,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Board Actions
   const createBoard = (title: string, description = '', color = '#4f46e5'): string => {
     markLocalWrite();
-    const boardId = generateRandomSlug(8);
+    // Guarantee the slug is unused before claiming it — 26^8 is large but not
+    // collision-proof, and a duplicate board id would corrupt routing.
+    const takenIds = new Set(boards.map((b) => b.id));
+    let boardId = generateRandomSlug(8);
+    while (takenIds.has(boardId)) {
+      boardId = generateRandomSlug(8);
+    }
+
     const newBoard: Board = {
       id: boardId,
       title,
@@ -925,60 +933,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
-    const sourceColumnId = task.columnId;
-    const isSameColumn = sourceColumnId === targetColumnId;
-
-    let updatedTasks: Task[] = [];
-
-    if (isSameColumn) {
-      const colTasks = tasks
-        .filter((t) => t.columnId === sourceColumnId && t.id !== taskId)
-        .sort((a, b) => a.order - b.order);
-
-      colTasks.splice(newOrder, 0, { ...task, order: newOrder });
-
-      const reorderedColTasks = colTasks.map((t, idx) => ({
-        ...t,
-        order: idx,
-        updatedAt: t.id === taskId ? new Date().toISOString() : t.updatedAt,
-      }));
-
-      const otherTasks = tasks.filter((t) => t.columnId !== sourceColumnId);
-      updatedTasks = [...otherTasks, ...reorderedColTasks];
-    } else {
-      const sourceColTasks = tasks
-        .filter((t) => t.columnId === sourceColumnId && t.id !== taskId)
-        .sort((a, b) => a.order - b.order)
-        .map((t, idx) => ({ ...t, order: idx }));
-
-      const targetColTasks = tasks
-        .filter((t) => t.columnId === targetColumnId)
-        .sort((a, b) => a.order - b.order);
-
-      const movedTask: Task = {
-        ...task,
-        columnId: targetColumnId,
-        order: newOrder,
-        updatedAt: new Date().toISOString(),
-      };
-
-      targetColTasks.splice(newOrder, 0, movedTask);
-
-      const reorderedTargetTasks = targetColTasks.map((t, idx) => ({
-        ...t,
-        order: idx,
-      }));
-
-      const restTasks = tasks.filter(
-        (t) => t.columnId !== sourceColumnId && t.columnId !== targetColumnId
-      );
-
-      updatedTasks = [
-        ...restTasks,
-        ...sourceColTasks,
-        ...reorderedTargetTasks,
-      ];
-    }
+    // Pure, unit-tested reorder logic — see src/utils/taskReorder.ts
+    const updatedTasks = reorderTasks(tasks, taskId, targetColumnId, newOrder);
 
     setTasks(updatedTasks);
 
@@ -987,9 +943,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const client = supabase;
       (async () => {
         try {
-          const changedTasks = updatedTasks.filter((t) =>
-            t.columnId === sourceColumnId || t.columnId === targetColumnId
-          );
+          const changedTasks = tasksNeedingPersist(tasks, updatedTasks);
+          if (changedTasks.length === 0) return;
 
           await client.from('tasks').upsert(
             changedTasks.map((t) => ({

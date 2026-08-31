@@ -26,6 +26,8 @@ import { formatDate } from '../../utils/date';
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { PRIORITY_CONFIG } from '../../utils/priorityConfig';
 import { ConfirmDialog } from '../common/ConfirmDialog';
+import { AttachmentRow } from './AttachmentRow';
+import { notifyError } from '../../utils/toast';
 
 export const TaskModal: React.FC = () => {
   const {
@@ -214,7 +216,7 @@ export const TaskModal: React.FC = () => {
     if (!file || !task) return;
 
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size exceeds 10MB limit.');
+      notifyError('File size exceeds 10MB limit.');
       return;
     }
 
@@ -228,28 +230,25 @@ export const TaskModal: React.FC = () => {
           .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
         if (uploadError) {
-          alert('Failed to upload file to storage: ' + uploadError.message);
+          notifyError('Failed to upload file to storage: ' + uploadError.message);
           e.target.value = '';
           return;
         }
 
-        const { data: signedData, error: signErr } = await supabase.storage
-          .from('attachments')
-          .createSignedUrl(filePath, 60 * 60 * 24 * 365);
-
-        const url = (!signErr && signedData?.signedUrl) ? signedData.signedUrl : filePath;
-
+        // Store the object PATH, not a signed URL. Signed URLs expire, and a
+        // long-lived one persisted in the database is nearly as exposed as a
+        // public object. We mint a short-lived URL on demand when rendering.
         addAttachment(task.id, {
           name: file.name,
           size: file.size,
           type: file.type,
-          url,
+          url: filePath,
         });
         e.target.value = '';
         return;
       }
     } catch (err: any) {
-      alert('File upload error: ' + (err.message || 'Unknown error occurred.'));
+      notifyError('File upload error: ' + (err.message || 'Unknown error occurred.'));
     }
 
     // Reset input
@@ -510,40 +509,11 @@ export const TaskModal: React.FC = () => {
                   ) : (
                     <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
                       {currentTaskAttachments.map((att) => (
-                        <div
+                        <AttachmentRow
                           key={att.id}
-                          className="p-2 bg-white border border-slate-200 rounded-lg flex items-center justify-between gap-2 text-xs"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            {att.type.startsWith('image/') ? (
-                              <img src={att.url} alt={att.name} className="w-6 h-6 rounded object-cover shrink-0" />
-                            ) : (
-                              <FileText className="w-4 h-4 text-indigo-500 shrink-0" />
-                            )}
-                            <span className="truncate text-slate-800 font-medium text-[11px]">{att.name}</span>
-                          </div>
-
-                          <div className="flex items-center gap-1 shrink-0">
-                            <a
-                              href={att.url}
-                              download={att.name}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-1 text-slate-400 hover:text-indigo-600 rounded"
-                              title="Download"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                            </a>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteAttachment(att.id, att.name)}
-                              className="p-1 text-slate-400 hover:text-rose-600 rounded"
-                              title="Delete attachment"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
+                          attachment={att}
+                          onDelete={handleDeleteAttachment}
+                        />
                       ))}
                     </div>
                   )}

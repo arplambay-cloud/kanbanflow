@@ -28,8 +28,16 @@ const PRESET_COLORS = [
 ];
 
 const BoardsContent: React.FC = () => {
-  const { boards, columns, tasks, createBoard, updateBoard, deleteBoard, navigateToBoard } =
-    useApp();
+  const {
+    boards,
+    columns,
+    tasks,
+    createBoard,
+    updateBoard,
+    deleteBoard,
+    navigateToBoard,
+    currentUser,
+  } = useApp();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [boardTitle, setBoardTitle] = useState('');
@@ -160,14 +168,16 @@ const BoardsContent: React.FC = () => {
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setBoardToDelete(board)}
-                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
-                      title="Delete board"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {currentUser?.role === 'admin' && (
+                      <button
+                        type="button"
+                        onClick={() => setBoardToDelete(board)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                        title="Delete board"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
 

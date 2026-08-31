@@ -18,6 +18,7 @@ import { NotFoundView } from './components/auth/NotFoundView';
 import { ResetPasswordView } from './components/auth/ResetPasswordView';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { RequireAdmin } from './components/common/RequireAdmin';
+import { ToastHost } from './components/common/ToastHost';
 import { Kanban, Loader2 } from 'lucide-react';
 
 const SECRET_LOGIN_PATH = (
@@ -87,8 +88,9 @@ export const AppContent: React.FC = () => {
   }
 
   const currentPath = location.pathname.toLowerCase().replace(/\/$/, '') || '/';
-  const isSecretLoginRoute =
-    currentPath === SECRET_LOGIN_PATH || currentPath === '/access';
+  // Only the configured path opens the login screen. No hardcoded fallback —
+  // otherwise rotating VITE_SECRET_LOGIN_PATH would never close the old door.
+  const isSecretLoginRoute = currentPath === SECRET_LOGIN_PATH;
 
   // If user is not authenticated:
   if (!user) {
@@ -155,6 +157,9 @@ export const AppContent: React.FC = () => {
 
       {/* First-time User Onboarding & Workspace Setup Wizard */}
       <OnboardingModal />
+
+      {/* Non-blocking notifications (replaces alert()) */}
+      <ToastHost />
     </div>
   );
 };

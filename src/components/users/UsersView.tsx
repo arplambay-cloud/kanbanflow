@@ -33,6 +33,7 @@ import { PriorityBadge } from '../common/PriorityBadge';
 import { formatDate } from '../../utils/date';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
+import { notifyError } from '../../utils/toast';
 
 export const UsersView: React.FC = () => {
   const { inviteMember, createMemberWithPassword, updateMemberProfile } = useAuth();
@@ -129,7 +130,7 @@ export const UsersView: React.FC = () => {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image size exceeds 5MB limit. Please choose a smaller photo.');
+      notifyError('Image size exceeds 5MB limit. Please choose a smaller photo.');
       return;
     }
 
@@ -143,7 +144,7 @@ export const UsersView: React.FC = () => {
           .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
         if (uploadError) {
-          alert('Photo upload failed: ' + uploadError.message);
+          notifyError('Photo upload failed: ' + uploadError.message);
           return;
         }
 
@@ -156,7 +157,7 @@ export const UsersView: React.FC = () => {
         return;
       }
     } catch (err: any) {
-      alert('Photo upload failed: ' + (err.message || 'Unknown error occurred'));
+      notifyError('Photo upload failed: ' + (err.message || 'Unknown error occurred'));
     }
   };
 
@@ -268,7 +269,7 @@ export const UsersView: React.FC = () => {
 
   const handleDeleteUser = (user: User) => {
     if (user.id === currentUser.id) {
-      alert('You cannot delete your own active user account.');
+      notifyError('You cannot delete your own active user account.');
       return;
     }
     setUserToDelete(user);
