@@ -682,3 +682,139 @@ The honest summary: **you picked the right tools and then didn't use the backend
 ## 6. 🎯 The one-paragraph version
 
 KanbanFlow has a polished, well-crafted React front end sitting on top of a backend it never actually calls. A correct and reasonably well-designed Supabase schema exists, but only the `profiles` table is used — every board, task, comment, attachment, and notification lives in the individual user's `localStorage`, which means the app's central promise (team collaboration) does not function, and notifications are structurally undeliverable. Layered on top of that are three critical auth holes: a **completely unauthenticated public endpoint that mints admin accounts**, an RLS policy that lets any member **promote themselves to admin**, and a signup trigger that **trusts a client-supplied role claim**. Fix the three auth holes today; then spend the next sprint moving the data layer to Supabase with TanStack Query and real membership-scoped RLS. The stack you chose is a good one — it just needs to be plugged in.
+
+---
+
+# 7. ✅ Remediation checklist
+
+**Original audit:** `121231b` · **Re-verified against:** `c6009d4` (2026-08-31)
+Every row below was **re-checked against the current code**, not assumed from commit messages.
+
+**Commits landed since the audit:** `1d8af6b` (root ErrorBoundary, cache headers) · `f1a5a3d` (deploy) · `54df0a0` (API auth, RequireAdmin, SQL triggers, CSPRNG) · `c6009d4` (Supabase sync, Realtime, Storage)
+
+| Status | Meaning |
+|---|---|
+| ✅ | Verified fixed in the current code |
+| 🟨 | Partially fixed — the main risk is reduced but a real gap remains |
+| ❌ | Not addressed |
+| 🆕 | **New issue introduced by the fixes** |
+
+---
+
+## 7.1 🔐 Security
+
+| # | Finding | Sev | Status | Evidence / what remains |
+|---|---|---|---|---|
+| 1.1 | Unauthenticated API creates admin users | 🔴 | ✅ **Fixed** | [create-user.ts:26-52](api/create-user.ts#L26-L52) — Bearer JWT verified via `auth.getUser(token)`, then `profiles.role === 'admin'` enforced. Fails closed on both. |
+| 1.2 | Any user can self-promote to `admin` | 🔴 | ✅ **Fixed** | [schema.sql:85-107](supabase/schema.sql#L85-L107) — `prevent_role_self_escalation` BEFORE UPDATE trigger, plus `with check (auth.uid() = id)` added at [:249](supabase/schema.sql#L249). |
+| 1.3 | Signup metadata sets your own role | 🔴 | ✅ **Fixed** | [schema.sql:41-45](supabase/schema.sql#L41-L45) — now hardcodes `assigned_role := 'member'`; the `raw_user_meta_data->>'role'` read is gone. |
+| 1.4 | RLS = any authenticated user owns every row | 🟠 | ❌ **Not fixed** | [schema.sql:251-258](supabase/schema.sql#L251-L258) — still eight × `for all using (auth.role() = 'authenticated')`. **Now materially worse:** §2.1 is fixed, so these tables hold real data. Any member can delete every board, or forge `user_id` on comments. **This is now the top security item.** |
+| 1.5 | No admin authorization on privileged views | 🟠 | 🟨 **Partial** | `/users` guarded by [RequireAdmin](src/components/common/RequireAdmin.tsx) at [App.tsx:138](src/App.tsx#L138). ❌ **`/settings` is still ungated** — it exposes `deleteUser` ([SettingsView.tsx:193](src/components/settings/SettingsView.tsx#L193)) and the Danger Zone reset ([:617](src/components/settings/SettingsView.tsx#L617)) to every member. |
+| 1.6 | Storage buckets public + world-deletable | 🟠 | 🟨 **Partial → see 🆕 A** | `attachments` is now `false` and `on conflict do nothing` replaces the clobbering `do update set public = true` ([schema.sql:263-265](supabase/schema.sql#L263-L265)). ❌ But **all three `storage.objects` policies were deleted** and not replaced — see new issue A. |
+| 1.7 | `SECURITY DEFINER` without pinned `search_path` | 🟡 | ✅ **Fixed** | `set search_path = public, pg_temp` on both functions ([:31](supabase/schema.sql#L31), [:89](supabase/schema.sql#L89)). |
+| 1.8 | Missing config silently grants local admin | 🟡 | ✅ **Fixed** | [AuthContext.tsx:234](src/context/AuthContext.tsx#L234) — now returns `new Error('Authentication service is not configured.')`. The `mockUser` admin fallback is gone. |
+| 1.9 | Secret login path is obscurity, and it leaked | 🟡 | ❌ **Not fixed** | [App.tsx:96](src/App.tsx#L96) still hardcodes `\|\| currentPath === '/access'`, so rotating `VITE_SECRET_LOGIN_PATH` does not close the old door. Low priority — it was never a real control. |
+| 1.10 | Cron endpoint auth is opt-in | 🟢 | ❌ **Not fixed** | [keep-alive.ts:8](api/keep-alive.ts#L8) — still `if (cronSecret && …)`. Also still echoes a `workspaces` row in the response body. |
+| 1.11 | Weak password policy / `Math.random()` | 🟢 | 🟨 **Partial** | Generator now uses `crypto.getRandomValues` ([UsersView.tsx:170](src/components/users/UsersView.tsx#L170)) ✅ and minimum raised 6 → **8** ([ResetPasswordView.tsx:42](src/components/auth/ResetPasswordView.tsx#L42)). Recommended 12 + Supabase HIBP leaked-password check — neither done. |
+| 1.12 | No security headers | 🟢 | ❌ **Not fixed** | [vercel.json](vercel.json) now sets `Cache-Control` (good — that fixed a white-screen cause), but still no CSP, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, or HSTS. |
+
+**Security: 5 fixed · 3 partial · 4 open**
+
+---
+
+## 7.2 ⚙️ Functionality
+
+| # | Finding | Sev | Status | Evidence / what remains |
+|---|---|---|---|---|
+| 2.1 | **App is `localStorage`-only; not collaborative** | 🔴 | ✅ **Fixed** | `c6009d4` added a real data layer: `fetchRemoteWorkspaceData` ([AppContext.tsx:227](src/context/AppContext.tsx#L227)) loads boards/columns/tasks/comments/attachments/notifications/activity from Postgres; every mutation now writes through; Realtime subscription at [:456](src/context/AppContext.tsx#L456). `localStorage` is demoted to a cache. **The single biggest finding in the audit — genuinely resolved.** |
+| 2.2 | Files base64'd into `localStorage` → quota crash | 🟠 | 🟨 **Partial → see 🆕 A** | All 8 writes now wrapped in `safeStorageSave` try/catch ([AppContext.tsx:114](src/context/AppContext.tsx#L114)) ✅. Storage upload path added to [TaskModal](src/components/tasks/TaskModal.tsx#L222) and [ProfileView](src/components/profile/ProfileView.tsx#L96) ✅. ❌ But the `readAsDataURL` **fallback still fires when upload fails** ([TaskModal.tsx:248](src/components/tasks/TaskModal.tsx#L248)), and [UsersView.tsx:141](src/components/users/UsersView.tsx#L141) still has a base64 path. `safeStorageSave` also swallows failures silently, so persistence loss is now invisible. |
+| 2.3 | "Invite member" invites nobody | 🟠 | ✅ **Fixed** | Now routed through the authenticated admin API using `auth.admin.inviteUserByEmail` ([create-user.ts:114-127](api/create-user.ts#L114-L127)); `inviteMember` sends the caller's JWT ([AuthContext.tsx:368](src/context/AuthContext.tsx#L368)) and returns real errors. |
+| 2.4 | Failed user creation reported as success | 🟠 | ✅ **Fixed** | [AuthContext.tsx:447-449](src/context/AuthContext.tsx#L447-L449) — the catch now returns `{ error: err }` instead of fabricating a user with `error: null`. |
+| 2.5 | `/set-password` is a permanent trap | 🟠 | 🟨 **Partial** | An `onCancel` escape hatch was added ([App.tsx:83-89](src/App.tsx#L83-L89)) ✅ — users are no longer stuck. ❌ But the root cause is unchanged: [App.tsx:44](src/App.tsx#L44) still sets the sticky `kf_require_password_setup` flag from `location.pathname === '/set-password'`, so any stray visit still hijacks the whole app until dismissed. Gate on the `PASSWORD_RECOVERY` auth event instead. |
+| 2.6 | Editing another user's role silently does nothing | 🟡 | 🟨 **Partial** | `updateMemberProfile` now returns `{ error }` ([AuthContext.tsx:453-471](src/context/AuthContext.tsx#L453-L471)) ✅. ❌ **Still silently fails** in practice: the only update policy is `auth.uid() = id`, so an admin editing someone else's row matches **0 rows — which Supabase does not report as an error**. Role changes to other members still don't persist. Fix with 1.4, or route role changes through the admin API. |
+| 2.7 | Profile email edits desynchronize login | 🟡 | ❌ **Not fixed** | [ProfileView.tsx:147-166](src/components/profile/ProfileView.tsx#L147-L166) — writes `email` to `profiles` but the `auth.updateUser({...})` call above it passes only `data`, never `email`. Users can still change their email and then be unable to log in with it. |
+| 2.8 | Board-ID slug collisions / partial migration | 🟡 | 🟨 **Partial** | `generateRandomSlug` now uses `crypto.getRandomValues` ([AppContext.tsx:121-129](src/context/AppContext.tsx#L121-L129)) ✅. ❌ No uniqueness check against existing board IDs. Low risk at current scale. |
+| 2.9a | `resetToDefaultData()` crashes on `initialUsers[0].id` | 🟢 | ✅ **Fixed** | [AppContext.tsx:1371-1383](src/context/AppContext.tsx#L1371-L1383) — no longer touches `initialUsers[0]`. |
+| 2.9b | Phantom seed board in every browser | 🟢 | ❌ **Not fixed** | [initialData.ts:13](src/data/initialData.ts#L13) still ships a hardcoded board + 4 columns as the default state. Now that the server is authoritative, this should be `[]`. |
+| 2.9c | Comments logged as `created_task` | 🟢 | ❌ **Not fixed** | Wrong action type still misreports the activity feed. |
+| 2.9d | `alert()` for validation errors | 🟢 | ❌ **Not fixed** | Still used in the upload handlers while the rest of the app uses toasts. |
+| 2.9e | No meta description / OG tags | 🟢 | ❌ **Not fixed** | [index.html](index.html) unchanged. |
+
+**Functionality: 4 fixed · 4 partial · 5 open**
+
+---
+
+## 7.3 🆕 New issues introduced by the fixes
+
+These did not exist at `121231b`. Both are consequences of the (correct) decision to wire up Supabase.
+
+| # | Sev | Issue | Detail |
+|---|---|---|---|
+| **A** | 🔴 **Critical** | **All `storage.objects` policies were deleted, breaking uploads** | The three storage policies are gone from [schema.sql](supabase/schema.sql) — the file now ends at the bucket insert ([:265](supabase/schema.sql#L265)). RLS on `storage.objects` denies by default, so **every attachment and avatar upload will be rejected**. Worse, that failure silently triggers the base64 fallback ([TaskModal.tsx:248](src/components/tasks/TaskModal.tsx#L248)), re-creating the exact `localStorage` quota problem from §2.2. `attachments` is also now private, so `getPublicUrl()` returns a URL that 400s — it needs `createSignedUrl()`. |
+| **B** | 🔴 **Critical** | **Realtime feedback loop breaks drag-and-drop** | [AppContext.tsx:456-465](src/context/AppContext.tsx#L456-L465) subscribes to `event: '*'` on the whole `public` schema with no table filter and no self-echo filter. One drag = 2 writes (`tasks` + `activity_logs`) = 2 full 7-query refetches that rebuild the DnD tree mid-drop. Also, `moveTask` persists `order` for only the moved task while reindexing all siblings locally, so refetches pull back stale orders and cards jump. **Full analysis and fixes in [WHITE-SCREEN-BUG.md](WHITE-SCREEN-BUG.md) §4.** |
+
+### Required SQL for issue A
+
+```sql
+create policy "Read own-workspace attachments" on storage.objects for select
+  using (bucket_id = 'attachments' and auth.role() = 'authenticated');
+create policy "Public read avatars" on storage.objects for select
+  using (bucket_id = 'avatars');
+create policy "Authenticated upload" on storage.objects for insert
+  with check (bucket_id in ('attachments','avatars') and auth.role() = 'authenticated');
+create policy "Owner deletes own objects" on storage.objects for delete
+  using (bucket_id in ('attachments','avatars') and owner = auth.uid());
+```
+
+Then swap `getPublicUrl` → `createSignedUrl(path, 60)` for `attachments`, and **delete the `readAsDataURL` fallbacks** so an upload failure surfaces as an error rather than silently filling `localStorage`.
+
+---
+
+## 7.4 🧹 Code quality & stack
+
+| Item | Status | Note |
+|---|---|---|
+| Dependency vulnerabilities | ✅ **Still clean** | `npm audit` → 0 across 221 packages |
+| `tsc --noEmit` under `strict` | ✅ **Still passes** | Verified at `c6009d4` |
+| Production build | ✅ **Passes** | 729 KB / one chunk |
+| Secrets hygiene | ✅ **Still clean** | Service-role key server-only, absent from `dist/` |
+| Root `ErrorBoundary` | ✅ **Added** | [main.tsx:12](src/main.tsx#L12) — fixed the white-screen unmount |
+| Cache headers | ✅ **Added** | [vercel.json](vercel.json) — HTML revalidates, hashed assets immutable |
+| Tests | ❌ **None** | Still zero test files, no runner |
+| ESLint / Prettier | ❌ **None** | — |
+| CI (GitHub Actions) | ❌ **None** | — |
+| Bundle splitting | ❌ **Not done** | 729 KB, grew from 715 KB; Vite still warns |
+| `AppContext` size | ❌ **Worse** | 879 → **1369 lines**. The God-object problem grew with the Supabase layer. TanStack Query (§4.1) would remove most of it. |
+| Versioned migrations | ❌ **Not done** | Still one `schema.sql`; bare `create policy` statements make it non-idempotent on re-run |
+| TanStack Query / Zod / Zustand | ❌ **Not adopted** | Data layer is hand-rolled `async` + `useCallback` — the direct cause of new issue B |
+
+---
+
+## 7.5 📈 Score movement
+
+| Area | At `121231b` | At `c6009d4` | Δ |
+|---|---|---|---|
+| Security | 🔴 **F** | 🟠 **C** | ▲ 3 critical auth holes closed; RLS (1.4) + missing storage policies (A) hold it back |
+| Functionality | 🔴 **D** | 🟡 **C+** | ▲ Real multi-user persistence exists; DnD is broken by issue B |
+| Architecture | 🟠 **C−** | 🟡 **C+** | ▲ Schema is now actually used; still no query layer |
+| Code quality | 🟡 **C+** | 🟡 **C** | ▼ No tests/lint/CI added; `AppContext` grew 56% |
+| Stack choice | 🟢 **B+** | 🟢 **B+** | ◆ Unchanged — tools were never the problem |
+
+**Real progress.** The three critical auth holes and the "not actually a team app" problem — the two headline findings — are genuinely resolved.
+
+---
+
+## 7.6 🎯 What to do next, in order
+
+| # | Task | Why now |
+|---|---|---|
+| 1 | **Restore `storage.objects` policies** (🆕 A) | Uploads are broken *today*, and the fallback re-creates the quota crash |
+| 2 | **Fix the Realtime self-echo loop** (🆕 B) | Drag-and-drop — the core interaction — is broken |
+| 3 | **Write membership-scoped RLS** (§1.4) | Was theoretical when tables were empty; now the tables hold real data |
+| 4 | **Guard `/settings` with `RequireAdmin`** (§1.5) | One-line fix; `deleteUser` + Danger Zone are exposed to every member |
+| 5 | **Route role changes through the admin API** (§2.6) | Admins still can't change roles; the UI reports success anyway |
+| 6 | Remove `readAsDataURL` fallbacks; surface storage failures (§2.2) | Silent data loss |
+| 7 | Fix the `/set-password` trigger (§2.5) and email desync (§2.7) | User-facing correctness |
+| 8 | Add ESLint + Vitest + CI (§3) | Nothing currently prevents a regression like B from shipping |
+| 9 | Security headers (§1.12), password ≥ 12 + HIBP (§1.11), cron secret (§1.10) | Cheap hardening |
+| 10 | Adopt TanStack Query (§4.1) | Structurally prevents the class of bug that B belongs to |

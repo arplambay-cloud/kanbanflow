@@ -456,6 +456,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   ): Promise<{ error?: any }> => {
     if (isSupabaseConfigured && supabase && userId) {
       try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+
+        if (token) {
+          const response = await fetch('/api/create-user', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              action: 'update-profile',
+              userId,
+              updates: {
+                role: updates.role,
+                name: updates.full_name,
+                jobTitle: updates.job_title,
+                avatar: updates.avatar_url,
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            return { error: new Error(errData.error || 'Failed to update member profile.') };
+          }
+          return { error: null };
+        }
+
         const { error } = await supabase
           .from('profiles')
           .update({

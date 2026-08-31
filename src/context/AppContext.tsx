@@ -1063,6 +1063,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
 
     const task = tasks.find((t) => t.id === taskId);
+    if (task) {
+      const board = boards.find((b) => b.id === task.boardId);
+      logActivity('comment_added', task.title, board?.title, 'Added comment: "' + content.slice(0, 40) + (content.length > 40 ? '...' : '') + '"');
+    }
+
     if (task && task.assigneeId && task.assigneeId !== currentUser.id) {
       notifyUser({
         recipientId: task.assigneeId,

@@ -144,15 +144,19 @@ export const ProfileView: React.FC = () => {
 
     if (isSupabaseConfigured && supabase) {
       try {
-        // 1. Update Supabase Auth metadata (populates Display name in Supabase dashboard)
-        await supabase.auth.updateUser({
+        // 1. Update Supabase Auth metadata and email
+        const authPayload: any = {
           data: {
             display_name: trimmedName,
             full_name: trimmedName,
             name: trimmedName,
             job_title: trimmedTitle || undefined,
           },
-        });
+        };
+        if (trimmedEmail !== currentUser.email) {
+          authPayload.email = trimmedEmail;
+        }
+        await supabase.auth.updateUser(authPayload);
 
         // 2. Update profiles table
         await supabase

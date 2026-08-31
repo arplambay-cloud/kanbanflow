@@ -232,34 +232,73 @@ alter table public.task_attachments enable row level security;
 alter table public.notifications enable row level security;
 alter table public.activity_logs enable row level security;
 
+-- Helper function to check if current user is admin
+create or replace function public.is_admin()
+returns boolean as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'admin'
+  );
+$$ language sql security definer set search_path = public, pg_temp;
+
 -- Drop existing policies if re-running
 drop policy if exists "Allow authenticated read on profiles" on public.profiles;
 drop policy if exists "Allow profile self update" on public.profiles;
+drop policy if exists "Allow admin update on profiles" on public.profiles;
 drop policy if exists "Allow authenticated all on workspaces" on public.workspaces;
+drop policy if exists "Allow authenticated read on workspaces" on public.workspaces;
+drop policy if exists "Allow admin modify on workspaces" on public.workspaces;
 drop policy if exists "Allow authenticated all on boards" on public.boards;
 drop policy if exists "Allow authenticated all on columns" on public.columns;
 drop policy if exists "Allow authenticated all on tasks" on public.tasks;
 drop policy if exists "Allow authenticated all on task_comments" on public.task_comments;
 drop policy if exists "Allow authenticated all on task_attachments" on public.task_attachments;
 drop policy if exists "Allow authenticated all on notifications" on public.notifications;
+drop policy if exists "Allow recipient read on notifications" on public.notifications;
+drop policy if exists "Allow authenticated insert notifications" on public.notifications;
+drop policy if exists "Allow recipient update notifications" on public.notifications;
+drop policy if exists "Allow recipient delete notifications" on public.notifications;
 drop policy if exists "Allow authenticated all on activity_logs" on public.activity_logs;
 
 -- Policies for Authenticated users
 create policy "Allow authenticated read on profiles" on public.profiles for select using (auth.role() = 'authenticated');
 create policy "Allow profile self update" on public.profiles for update using (auth.uid() = id) with check (auth.uid() = id);
+create policy "Allow admin update on profiles" on public.profiles for update using (public.is_admin());
 
-create policy "Allow authenticated all on workspaces" on public.workspaces for all using (auth.role() = 'authenticated');
+-- Workspace Policies
+create policy "Allow authenticated read on workspaces" on public.workspaces for select using (auth.role() = 'authenticated');
+create policy "Allow admin modify on workspaces" on public.workspaces for all using (public.is_admin());
+
+-- Boards, Columns, Tasks, Comments, Attachments
 create policy "Allow authenticated all on boards" on public.boards for all using (auth.role() = 'authenticated');
 create policy "Allow authenticated all on columns" on public.columns for all using (auth.role() = 'authenticated');
 create policy "Allow authenticated all on tasks" on public.tasks for all using (auth.role() = 'authenticated');
 create policy "Allow authenticated all on task_comments" on public.task_comments for all using (auth.role() = 'authenticated');
 create policy "Allow authenticated all on task_attachments" on public.task_attachments for all using (auth.role() = 'authenticated');
-create policy "Allow authenticated all on notifications" on public.notifications for all using (auth.role() = 'authenticated');
+
+-- Targeted Notification Policies (recipient-scoped)
+create policy "Allow recipient read on notifications" on public.notifications for select using (auth.uid() = recipient_id);
+create policy "Allow authenticated insert notifications" on public.notifications for insert with check (auth.role() = 'authenticated');
+create policy "Allow recipient update notifications" on public.notifications for update using (auth.uid() = recipient_id);
+create policy "Allow recipient delete notifications" on public.notifications for delete using (auth.uid() = recipient_id);
+
+-- Activity Logs (readable & insertable by workspace members)
 create policy "Allow authenticated all on activity_logs" on public.activity_logs for all using (auth.role() = 'authenticated');
 
 -- ------------------------------------------------------------------------------
--- 13. STORAGE BUCKETS SETUP
+-- 13. STORAGE BUCKETS & POLICIES
 -- ------------------------------------------------------------------------------
 insert into storage.buckets (id, name, public)
-values ('attachments', 'attachments', false), ('avatars', 'avatars', true)
-on conflict (id) do nothing;
+values ('attachments', 'attachments', true), ('avatars', 'avatars', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "Read attachments" on storage.objects;
+drop policy if exists "Public read avatars" on storage.objects;
+drop policy if exists "Authenticated upload objects" on storage.objects;
+drop policy if exists "Owner deletes own objects" on storage.objects;
+
+create policy "Read attachments" on storage.objects for select using (bucket_id = 'attachments' and auth.role() = 'authenticated');
+create policy "Public read avatars" on storage.objects for select using (bucket_id = 'avatars');
+create policy "Authenticated upload objects" on storage.objects for insert with check (bucket_id in ('attachments', 'avatars') and auth.role() = 'authenticated');
+create policy "Owner deletes own objects" on storage.objects for delete using (bucket_id in ('attachments', 'avatars') and (owner = auth.uid() or public.is_admin()));
+

@@ -43,6 +43,7 @@ export const SettingsView: React.FC = () => {
   const [workspaceDesc, setWorkspaceDesc] = useState(workspace.description);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isOrgProfileModalOpen, setIsOrgProfileModalOpen] = useState(false);
+  const isAdmin = currentUser?.role === 'admin';
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -260,14 +261,16 @@ export const SettingsView: React.FC = () => {
             />
           </div>
 
-          <div className="pt-2 flex justify-end">
-            <button
-              type="submit"
-              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg text-xs sm:text-sm font-semibold shadow-sm transition-all"
-            >
-              Save Workspace Changes
-            </button>
-          </div>
+          {isAdmin && (
+            <div className="pt-2 flex justify-end">
+              <button
+                type="submit"
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg text-xs sm:text-sm font-semibold shadow-sm transition-all"
+              >
+                Save Workspace Changes
+              </button>
+            </div>
+          )}
         </form>
       </div>
 
@@ -286,15 +289,17 @@ export const SettingsView: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsAddingMember(!isAddingMember)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Member</span>
-            </button>
-          </div>
+          {isAdmin && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsAddingMember(!isAddingMember)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Member</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Add Member Form Drawer/Inline */}
@@ -566,24 +571,28 @@ export const SettingsView: React.FC = () => {
                   {member.role}
                 </span>
 
-                <button
-                  type="button"
-                  onClick={() => startEditMember(member)}
-                  className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                  title="Edit member details"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
+                {isAdmin && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => startEditMember(member)}
+                      className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                      title="Edit member details"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
 
-                {member.id !== currentUser.id && (
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteMember(member.id, member.name)}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                    title="Remove member from workspace"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                    {member.id !== currentUser.id && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteMember(member.id, member.name)}
+                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                        title="Remove member from workspace"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -591,41 +600,43 @@ export const SettingsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Demo Data & Danger Zone */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-subtle p-6 sm:p-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-              <RotateCcw className="w-5 h-5" />
+      {/* Demo Data & Danger Zone (Admin Only) */}
+      {isAdmin && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-subtle p-6 sm:p-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                <RotateCcw className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 text-base">Reset Demo Data</h3>
+                <p className="text-xs text-slate-400">
+                  Restore the default workspace, initial boards, tasks, and users.
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-slate-900 text-base">Reset Demo Data</h3>
-              <p className="text-xs text-slate-400">
-                Restore the default workspace, initial boards, tasks, and users.
-              </p>
-            </div>
-          </div>
 
-          <button
-            onClick={() => {
-              setConfirmDialog({
-                isOpen: true,
-                title: 'Reset Demo Data',
-                message: 'Are you sure you want to reset all data back to the default demo state? All custom boards, tasks, and users will be replaced.',
-                confirmLabel: 'Reset Data',
-                onConfirm: () => {
-                  resetToDefaultData();
-                  setWorkspaceName('Acme Product Team');
-                  setConfirmDialog(null);
-                },
-              });
-            }}
-            className="px-4 py-2 bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
-          >
-            Reset to Default
-          </button>
+            <button
+              onClick={() => {
+                setConfirmDialog({
+                  isOpen: true,
+                  title: 'Reset Demo Data',
+                  message: 'Are you sure you want to reset all data back to the default demo state? All custom boards, tasks, and users will be replaced.',
+                  confirmLabel: 'Reset Data',
+                  onConfirm: () => {
+                    resetToDefaultData();
+                    setWorkspaceName('Acme Product Team');
+                    setConfirmDialog(null);
+                  },
+                });
+              }}
+              className="px-4 py-2 bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
+            >
+              Reset to Default
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* In-App Confirmation Dialog */}
       {confirmDialog && (

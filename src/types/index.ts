@@ -84,7 +84,7 @@ export interface ActivityLog {
   userId: string;
   userName: string;
   userAvatar: string;
-  action: 'created_task' | 'moved_task' | 'assigned_task' | 'completed_task' | 'created_board' | 'created_column';
+  action: 'created_task' | 'moved_task' | 'assigned_task' | 'completed_task' | 'created_board' | 'created_column' | 'comment_added';
   entityTitle: string;
   boardTitle?: string;
   details?: string;

@@ -50,7 +50,45 @@ export default async function handler(req: any, res: any) {
     return res.status(403).json({ error: 'Access denied: Admin privileges required.' });
   }
 
-  // 3. Process the user creation / invitation request
+  // 3. Handle admin profile updates or deletions
+  const { action, userId, updates } = req.body || {};
+
+  if (action === 'update-profile' && userId) {
+    const { error: updateErr } = await supabaseAdmin
+      .from('profiles')
+      .update({
+        ...(updates?.role ? { role: updates.role } : {}),
+        ...(updates?.name ? { full_name: updates.name } : {}),
+        ...(updates?.jobTitle ? { job_title: updates.jobTitle } : {}),
+        ...(updates?.avatar ? { avatar_url: updates.avatar } : {}),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId);
+
+    if (updateErr) {
+      return res.status(400).json({ error: updateErr.message });
+    }
+
+    if (updates?.role || updates?.name || updates?.jobTitle) {
+      await supabaseAdmin.auth.admin.updateUserById(userId, {
+        user_metadata: {
+          ...(updates?.name ? { display_name: updates.name, full_name: updates.name, name: updates.name } : {}),
+          ...(updates?.role ? { role: updates.role } : {}),
+          ...(updates?.jobTitle ? { job_title: updates.jobTitle } : {}),
+        },
+      });
+    }
+
+    return res.status(200).json({ success: true });
+  }
+
+  if (action === 'delete-user' && userId) {
+    await supabaseAdmin.from('profiles').delete().eq('id', userId);
+    await supabaseAdmin.auth.admin.deleteUser(userId);
+    return res.status(200).json({ success: true });
+  }
+
+  // 4. Process the user creation / invitation request
   const { email, password, fullName, role, jobTitle } = req.body || {};
 
   if (!email) {

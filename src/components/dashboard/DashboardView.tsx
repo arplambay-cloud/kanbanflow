@@ -440,6 +440,7 @@ export const DashboardView: React.FC = () => {
                         {log.action === 'assigned_task' && 'assigned'}{' '}
                         {log.action === 'created_board' && 'created board'}{' '}
                         {log.action === 'created_column' && 'added column'}{' '}
+                        {log.action === 'comment_added' && 'commented on'}{' '}
                         <span className="font-semibold text-slate-800">
                           "{log.entityTitle}"
                         </span>
