@@ -287,6 +287,33 @@ drop policy if exists "Admins prune activity" on public.activity_logs;
 alter table public.task_attachments
   add column if not exists uploader_id uuid default auth.uid();
 
+-- The deployed `uploaded_by` column is NOT NULL with no default, but the client
+-- does not send it, so every attachment insert failed a not-null violation.
+-- Relax it and default it to the caller's display identity.
+alter table public.task_attachments
+  alter column uploaded_by drop not null;
+alter table public.task_attachments
+  alter column uploaded_by set default '';
+
+-- The deployed workspace row is 'ws-default', but boards/activity_logs default
+-- their workspace_id to 'ws-1', which does not exist — so every board insert
+-- failed the foreign key. Seed the row and align the defaults.
+insert into public.workspaces (id, name, description)
+values ('ws-default', 'My Workspace', 'Collaborative team workspace for managing projects and tasks.')
+on conflict (id) do nothing;
+
+alter table public.boards alter column workspace_id set default 'ws-default';
+
+-- Columns the client writes that were missing from the deployed tables, so
+-- those writes failed silently: workspaces.accent_color and
+-- activity_logs.workspace_id.
+alter table public.workspaces
+  add column if not exists accent_color text default '#4f46e5';
+
+alter table public.activity_logs
+  add column if not exists workspace_id text
+  references public.workspaces(id) on delete cascade default 'ws-default';
+
 -- Policies for Authenticated users
 create policy "Allow authenticated read on profiles" on public.profiles for select using (auth.role() = 'authenticated');
 create policy "Allow profile self update" on public.profiles for update using (auth.uid()::text = id::text) with check (auth.uid()::text = id::text);
