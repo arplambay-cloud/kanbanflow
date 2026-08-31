@@ -827,7 +827,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             description: data.description || '',
             priority: data.priority || 'medium',
             due_date: data.dueDate || null,
-            assignee_id: (data.assigneeId && data.assigneeId.length === 36) ? data.assigneeId : null,
+            assignee_id: data.assigneeId || null,
             order: tasksInColumn.length,
           });
         } catch (err) {
@@ -878,7 +878,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           if (updates.columnId !== undefined) dbUpdates.column_id = updates.columnId;
           if (updates.order !== undefined) dbUpdates.order = updates.order;
           if (updates.assigneeId !== undefined) {
-            dbUpdates.assignee_id = (updates.assigneeId && updates.assigneeId.length === 36) ? updates.assigneeId : null;
+            dbUpdates.assignee_id = updates.assigneeId || null;
           }
 
           await client.from('tasks').update(dbUpdates).eq('id', id);
@@ -958,7 +958,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               description: t.description || '',
               priority: t.priority || 'medium',
               due_date: t.dueDate || null,
-              assignee_id: (t.assigneeId && t.assigneeId.length === 36) ? t.assigneeId : null,
+              assignee_id: t.assigneeId || null,
               order: t.order,
               updated_at: t.updatedAt,
             })),
@@ -1009,7 +1009,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           await client.from('task_comments').insert({
             id: commentId,
             task_id: taskId,
-            user_id: (currentUser.id && currentUser.id.length === 36) ? currentUser.id : authUser?.id,
+            user_id: currentUser.id || authUser?.id,
             user_name: currentUser.name,
             user_avatar: currentUser.avatar || '',
             content,
@@ -1171,7 +1171,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           await client.from('notifications').insert({
             id: notifId,
             recipient_id: data.recipientId,
-            sender_id: (currentUser.id && currentUser.id.length === 36) ? currentUser.id : authUser?.id,
+            sender_id: currentUser.id || authUser?.id,
             sender_name: currentUser.name,
             sender_avatar: currentUser.avatar || '',
             type: data.type,
@@ -1270,7 +1270,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           await client.from('activity_logs').insert({
             id: logId,
             workspace_id: workspace.id || 'ws-default',
-            user_id: (currentUser.id && currentUser.id.length === 36) ? currentUser.id : authUser?.id,
+            user_id: currentUser.id || authUser?.id,
             user_name: currentUser.name,
             user_avatar: currentUser.avatar || '',
             action,

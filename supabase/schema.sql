@@ -90,21 +90,29 @@ set search_path = public, pg_temp
 as $$
 begin
   if new.role is distinct from old.role then
-    -- Allow internal superusers and the serverless API's service-role key.
-    -- NOTE: deliberately does NOT grant on `auth.uid() is null`. This trigger is
-    -- the last line of defence against privilege escalation, so absence of an
-    -- identity must never be treated as authority — a caller has to positively
-    -- prove it is service_role.
-    if current_user in ('postgres', 'service_role', 'supabase_admin')
-       or coalesce(auth.role(), '') = 'service_role'
+    -- CRITICAL: use session_user, NOT current_user.
+    -- This function is SECURITY DEFINER and owned by `postgres`, so inside it
+    -- `current_user` is ALWAYS the owner and never the caller. Testing
+    -- `current_user in ('postgres', ...)` was therefore true on every call and
+    -- disabled this guard entirely — any authenticated user could self-promote.
+    -- `session_user` is the real login role: 'postgres' in the SQL editor and
+    -- migrations, 'authenticator' for PostgREST requests.
+    if session_user in ('postgres', 'supabase_admin') then
+      return new;
+    end if;
+
+    -- The serverless admin API, authenticated with the service-role key.
+    -- These claims come from the JWT, which GoTrue signs; a client cannot forge
+    -- them (note: this reads the top-level `role` claim, not user_metadata).
+    if coalesce(auth.role(), '') = 'service_role'
        or coalesce(auth.jwt() ->> 'role', '') = 'service_role' then
       return new;
     end if;
 
-    -- Allow authenticated admin users
+    -- A signed-in workspace admin.
     if exists (
       select 1 from public.profiles
-      where id::text = auth.uid()::text and role = 'admin'
+      where id = auth.uid() and role = 'admin'
     ) then
       return new;
     end if;
@@ -252,7 +260,7 @@ create or replace function public.is_admin()
 returns boolean as $$
   select exists (
     select 1 from public.profiles
-    where id::text = auth.uid()::text and role = 'admin'
+    where id = auth.uid() and role = 'admin'
   );
 $$ language sql security definer set search_path = public, pg_temp;
 
@@ -331,7 +339,7 @@ alter table public.activity_logs
 
 -- Policies for Authenticated users
 create policy "Allow authenticated read on profiles" on public.profiles for select using (auth.role() = 'authenticated');
-create policy "Allow profile self update" on public.profiles for update using (auth.uid()::text = id::text) with check (auth.uid()::text = id::text);
+create policy "Allow profile self update" on public.profiles for update using (auth.uid() = id) with check (auth.uid() = id);
 create policy "Allow admin update on profiles" on public.profiles for update using (public.is_admin());
 
 -- Workspace Policies
@@ -375,11 +383,11 @@ create policy "Members manage tasks" on public.tasks
 create policy "Members read comments" on public.task_comments
   for select using (auth.role() = 'authenticated');
 create policy "Members post own comments" on public.task_comments
-  for insert with check (user_id::text = auth.uid()::text);
+  for insert with check (user_id = auth.uid());
 create policy "Authors update own comments" on public.task_comments
-  for update using (user_id::text = auth.uid()::text or public.is_admin());
+  for update using (user_id = auth.uid() or public.is_admin());
 create policy "Authors delete own comments" on public.task_comments
-  for delete using (user_id::text = auth.uid()::text or public.is_admin());
+  for delete using (user_id = auth.uid() or public.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- TASK ATTACHMENTS — anyone may read and upload; only the uploader (or an admin)
@@ -390,15 +398,15 @@ create policy "Members read attachments" on public.task_attachments
 create policy "Members add attachments" on public.task_attachments
   for insert with check (auth.role() = 'authenticated');
 create policy "Uploader deletes attachments" on public.task_attachments
-  for delete using (uploader_id::text = auth.uid()::text or public.is_admin());
+  for delete using (uploader_id = auth.uid() or public.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- NOTIFICATIONS (recipient-scoped)
 -- ------------------------------------------------------------------------------
-create policy "Allow recipient read on notifications" on public.notifications for select using (recipient_id::text = auth.uid()::text);
+create policy "Allow recipient read on notifications" on public.notifications for select using (recipient_id = auth.uid());
 create policy "Allow authenticated insert notifications" on public.notifications for insert with check (auth.role() = 'authenticated');
-create policy "Allow recipient update notifications" on public.notifications for update using (recipient_id::text = auth.uid()::text);
-create policy "Allow recipient delete notifications" on public.notifications for delete using (recipient_id::text = auth.uid()::text);
+create policy "Allow recipient update notifications" on public.notifications for update using (recipient_id = auth.uid());
+create policy "Allow recipient delete notifications" on public.notifications for delete using (recipient_id = auth.uid());
 
 -- ------------------------------------------------------------------------------
 -- ACTIVITY LOGS — append-only audit trail. You may only write entries attributed
@@ -407,7 +415,7 @@ create policy "Allow recipient delete notifications" on public.notifications for
 create policy "Members read activity" on public.activity_logs
   for select using (auth.role() = 'authenticated');
 create policy "Members append own activity" on public.activity_logs
-  for insert with check (user_id::text = auth.uid()::text);
+  for insert with check (user_id = auth.uid());
 create policy "Admins prune activity" on public.activity_logs
   for delete using (public.is_admin());
 
@@ -429,3 +437,16 @@ create policy "Authenticated upload objects" on storage.objects for insert with 
 -- `owner` is uuid on current Supabase, but cast both sides so this works
 -- regardless of the storage schema version on the project.
 create policy "Owner deletes own objects" on storage.objects for delete using (bucket_id in ('attachments', 'avatars') and (owner::text = auth.uid()::text or public.is_admin()));
+
+-- ------------------------------------------------------------------------------
+-- 14. FOREIGN-KEY INDEXES
+-- Postgres does not index foreign keys automatically, and each of these backs a
+-- filter the application actually issues (assignee lookups, notification
+-- recipient scoping, per-user activity).
+-- ------------------------------------------------------------------------------
+create index if not exists idx_task_comments_user_id      on public.task_comments(user_id);
+create index if not exists idx_activity_logs_user_id      on public.activity_logs(user_id);
+create index if not exists idx_tasks_assignee_id          on public.tasks(assignee_id);
+create index if not exists idx_notifications_recipient_id on public.notifications(recipient_id);
+create index if not exists idx_notifications_sender_id    on public.notifications(sender_id);
+create index if not exists idx_task_attachments_uploader  on public.task_attachments(uploader_id);

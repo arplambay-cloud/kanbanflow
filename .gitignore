@@ -40,3 +40,6 @@ dist-ssr
 AUDIT-REPORT.md
 WHITE-SCREEN-BUG.md
 supabase/.temp
+
+# Local pre-migration DB backup (not for the repo)
+.backup-pre-migration/
