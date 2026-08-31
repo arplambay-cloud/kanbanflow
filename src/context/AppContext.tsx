@@ -256,6 +256,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         .select('*')
         .order('created_at', { ascending: true });
 
+      // Avatars are resolved from here for notifications and activity logs
+      // rather than being copied into every one of those rows.
+      const avatarById = new Map<string, string>();
+      (dbProfiles || []).forEach((p: { id?: string; avatar_url?: string }) => {
+        if (p?.id) avatarById.set(p.id, p.avatar_url || '');
+      });
+
       if (dbProfiles && dbProfiles.length > 0) {
         const mappedUsers: User[] = dbProfiles.map((p: any) => ({
           id: p.id,
@@ -428,7 +435,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           recipientId: n.recipient_id,
           senderId: n.sender_id || '',
           senderName: n.sender_name || 'Team Member',
-          senderAvatar: n.sender_avatar || '',
+          // Resolved from profiles, not read from the row — see avatarById.
+          senderAvatar: avatarById.get(n.sender_id) || n.sender_avatar || '',
           type: n.type,
           message: n.message,
           taskId: n.task_id || undefined,
@@ -453,7 +461,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           id: a.id,
           userId: a.user_id || '',
           userName: a.user_name || 'Member',
-          userAvatar: a.user_avatar || '',
+          // Resolved from profiles, not read from the row — see avatarById.
+          userAvatar: avatarById.get(a.user_id) || a.user_avatar || '',
           action: a.action,
           entityTitle: a.entity_title,
           boardTitle: a.board_title || '',
@@ -1011,7 +1020,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             task_id: taskId,
             user_id: currentUser.id || authUser?.id,
             user_name: currentUser.name,
-            user_avatar: currentUser.avatar || '',
+            user_avatar: '', // resolved from profiles on read; never store a copy here
             content,
           });
         } catch (err) {
@@ -1173,7 +1182,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             recipient_id: data.recipientId,
             sender_id: currentUser.id || authUser?.id,
             sender_name: currentUser.name,
-            sender_avatar: currentUser.avatar || '',
+            sender_avatar: '', // resolved from profiles on read; never store a copy here
             type: data.type,
             message: data.message,
             task_id: data.taskId || null,
@@ -1272,7 +1281,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             workspace_id: workspace.id || 'ws-default',
             user_id: currentUser.id || authUser?.id,
             user_name: currentUser.name,
-            user_avatar: currentUser.avatar || '',
+            user_avatar: '', // resolved from profiles on read; never store a copy here
             action,
             entity_title: entityTitle,
             board_title: boardTitle || '',

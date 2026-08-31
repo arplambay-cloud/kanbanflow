@@ -34,6 +34,7 @@ import { formatDate } from '../../utils/date';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
 import { notifyError } from '../../utils/toast';
+import { persistableAvatar } from '../../utils/avatar';
 
 export const UsersView: React.FC = () => {
   const { inviteMember, createMemberWithPassword, updateMemberProfile } = useAuth();
@@ -252,7 +253,7 @@ export const UsersView: React.FC = () => {
       role: editRole,
       full_name: editName.trim(),
       job_title: editTitle.trim(),
-      avatar_url: editAvatar.trim(),
+      avatar_url: persistableAvatar(editAvatar),
     });
 
     if (profileErr) {
