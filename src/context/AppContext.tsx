@@ -288,7 +288,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         safeStorageSave(LOCAL_STORAGE_KEYS.WORKSPACE, mappedWorkspace);
       } else if (authUser?.role === 'admin') {
         await supabase.from('workspaces').upsert({
-          id: 'ws-1',
+          id: 'ws-default',
           name: 'My Workspace',
           description: 'Collaborative team workspace for managing projects and tasks.',
           accent_color: '#4f46e5',
@@ -316,7 +316,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const seedBoardId = 'pjxmtkwq';
         await supabase.from('boards').upsert({
           id: seedBoardId,
-          workspace_id: 'ws-1',
+          workspace_id: 'ws-default',
           title: 'Main Project Board',
           description: 'Central Kanban board for tracking tasks and sprints.',
           color: '#4f46e5',
@@ -353,7 +353,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       // 5. Comments & Attachments
       const [{ data: dbComments }, { data: dbAttachments }] = await Promise.all([
         supabase.from('task_comments').select('*').order('created_at', { ascending: true }),
-        supabase.from('task_attachments').select('*').order('created_at', { ascending: true }),
+        // NOTE: this table's timestamp column is `uploaded_at`, not `created_at`.
+        // Ordering by a non-existent column made the query error and silently
+        // return null, so attachments never loaded.
+        supabase.from('task_attachments').select('*').order('uploaded_at', { ascending: true }),
       ]);
 
       const commentsByTask: Record<string, TaskComment[]> = {};
@@ -380,8 +383,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           size: a.size || 0,
           type: a.type || '',
           url: a.url,
-          uploadedAt: a.created_at,
-          uploadedBy: '',
+          uploadedAt: a.uploaded_at,
+          uploadedBy: a.uploaded_by || '',
         });
       });
 
@@ -559,7 +562,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             accent_color: partial.accentColor !== undefined ? partial.accentColor : workspace.accentColor,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', workspace.id || 'ws-1');
+          .eq('id', workspace.id || 'ws-default');
       } catch (err) {
         console.warn('Supabase updateWorkspace error:', err);
       }
@@ -629,7 +632,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         try {
           await client.from('boards').insert({
             id: boardId,
-            workspace_id: workspace.id || 'ws-1',
+            workspace_id: workspace.id || 'ws-default',
             title,
             description,
             color,
@@ -1086,6 +1089,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const client = supabase;
       (async () => {
         try {
+          // `uploaded_by` is NOT NULL on the deployed table; omitting it made
+          // every attachment insert fail a not-null violation.
           await client.from('task_attachments').insert({
             id: attachmentId,
             task_id: taskId,
@@ -1093,6 +1098,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             size: fileData.size,
             type: fileData.type,
             url: fileData.url,
+            uploaded_by: currentUser.name || '',
           });
         } catch (err) {
           console.warn('Supabase addAttachment error:', err);
@@ -1263,7 +1269,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         try {
           await client.from('activity_logs').insert({
             id: logId,
-            workspace_id: workspace.id || 'ws-1',
+            workspace_id: workspace.id || 'ws-default',
             user_id: (currentUser.id && currentUser.id.length === 36) ? currentUser.id : authUser?.id,
             user_name: currentUser.name,
             user_avatar: currentUser.avatar || '',
