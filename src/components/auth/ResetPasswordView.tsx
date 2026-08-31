@@ -2,6 +2,7 @@
 import { useAuth } from '../../context/AuthContext';
 import {
   Lock,
+  User as UserIcon,
   AlertCircle,
   CheckCircle2,
   ArrowRight,
@@ -16,7 +17,8 @@ interface ResetPasswordViewProps {
 }
 
 export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ onSuccess }) => {
-  const { updatePassword } = useAuth();
+  const { user, updatePassword } = useAuth();
+  const [fullName, setFullName] = useState(user?.name && user.name !== 'User' ? user.name : '');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -27,6 +29,10 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ onSuccess 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!fullName.trim()) {
+      setError('Please enter your full name.');
+      return;
+    }
     if (!newPassword.trim() || !confirmPassword.trim()) {
       setError('Please fill in both password fields.');
       return;
@@ -43,7 +49,7 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ onSuccess 
     setIsLoading(true);
 
     try {
-      const { error } = await updatePassword(newPassword);
+      const { error } = await updatePassword(newPassword, fullName.trim());
       if (error) {
         setError(error.message || 'Failed to update password.');
       } else {
@@ -69,10 +75,10 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ onSuccess 
             <KeyRound className="w-6 h-6" />
           </div>
           <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-            Set New Password
+            Account Setup
           </h1>
           <p className="text-xs text-slate-400 mt-1 font-medium">
-            Please choose and confirm your new account password.
+            Please enter your name and choose a secure password to activate your account.
           </p>
         </div>
 
@@ -82,9 +88,9 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ onSuccess 
               <CheckCircle2 className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">Password Updated!</h3>
+              <h3 className="text-base font-bold text-white">Account Activated!</h3>
               <p className="text-xs text-slate-400 mt-1">
-                Your password has been securely saved. You can now access your workspace.
+                Your profile and password have been saved. You can now access your workspace.
               </p>
             </div>
             <button
@@ -104,6 +110,24 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ onSuccess 
                 <span>{error}</span>
               </div>
             )}
+
+            {/* Full Name */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                Your Full Name <span className="text-rose-400">*</span>
+              </label>
+              <div className="relative">
+                <UserIcon className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Umair Khan"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-700/80 bg-slate-950/60 text-white text-xs sm:text-sm font-medium placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all"
+                />
+              </div>
+            </div>
 
             {/* New Password */}
             <div>
@@ -173,7 +197,7 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ onSuccess 
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Updating password...</span>
+                  <span>Activating account...</span>
                 </>
               ) : (
                 <>

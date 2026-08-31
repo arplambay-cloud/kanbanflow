@@ -16,7 +16,7 @@ interface AuthContextType {
   ) => Promise<{ error: any; needsEmailConfirmation?: boolean }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
-  updatePassword: (newPassword: string) => Promise<{ error: any }>;
+  updatePassword: (newPassword: string, fullName?: string) => Promise<{ error: any }>;
   inviteMember: (
     email: string,
     fullName: string,
@@ -294,21 +294,47 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { error: null };
   };
 
-  // Update Password
-  const updatePassword = async (newPassword: string) => {
+  // Update Password and Name in Supabase
+  const updatePassword = async (newPassword: string, fullName?: string) => {
     if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
-        data: {
-          has_set_password: true,
-          password_updated_at: new Date().toISOString(),
-        },
-      });
-      if (!error) {
-        localStorage.removeItem('kf_require_password_setup');
+      const cleanName = fullName?.trim();
+      const metaUpdates: any = {
+        has_set_password: true,
+        password_updated_at: new Date().toISOString(),
+      };
+      if (cleanName) {
+        metaUpdates.full_name = cleanName;
       }
+
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword,
+        data: metaUpdates,
+      });
+
+      if (!error && data?.user) {
+        localStorage.removeItem('kf_require_password_setup');
+
+        // Sync to profiles table as well
+        if (cleanName) {
+          try {
+            await supabase
+              .from('profiles')
+              .update({
+                full_name: cleanName,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', data.user.id);
+          } catch (e) {
+            console.warn('Error updating profile full_name:', e);
+          }
+        }
+
+        await syncUserProfile(data.user);
+      }
+
       return { error };
     }
+
     localStorage.removeItem('kf_require_password_setup');
     return { error: null };
   };
