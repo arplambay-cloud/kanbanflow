@@ -5,7 +5,6 @@ import {
   Coffee,
   Radio,
   Zap,
-  RefreshCw,
   Cat,
   Bot,
   Gamepad2,
@@ -64,22 +63,13 @@ const FUNNY_MESSAGES = [
 ];
 
 export const NotFoundView: React.FC = () => {
-  // Random message on initial page load / refresh
-  const [index, setIndex] = useState(() =>
+  // Random message selected on every page load / refresh
+  const [index] = useState(() =>
     Math.floor(Math.random() * FUNNY_MESSAGES.length)
   );
-  const [isRotating, setIsRotating] = useState(false);
 
   const current = FUNNY_MESSAGES[index];
   const Icon = current.icon;
-
-  const handleNextMessage = () => {
-    setIsRotating(true);
-    setTimeout(() => {
-      setIndex((prev) => (prev + 1) % FUNNY_MESSAGES.length);
-      setIsRotating(false);
-    }, 200);
-  };
 
   return (
     <div className="min-h-screen w-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center select-none font-sans relative overflow-hidden text-slate-200">
@@ -89,8 +79,8 @@ export const NotFoundView: React.FC = () => {
 
       <div className="relative z-10 max-w-md w-full flex flex-col items-center">
         {/* Animated Icon Card */}
-        <div className="w-20 h-20 rounded-3xl bg-slate-900/90 border border-slate-800 flex items-center justify-center mb-6 shadow-2xl shadow-indigo-500/10 group cursor-pointer transition-transform hover:scale-105" onClick={handleNextMessage}>
-          <Icon className={`w-10 h-10 text-indigo-400 transition-all duration-300 ${isRotating ? 'scale-75 rotate-180 opacity-50' : 'scale-100 rotate-0 opacity-100'}`} />
+        <div className="w-20 h-20 rounded-3xl bg-slate-900/90 border border-slate-800 flex items-center justify-center mb-6 shadow-2xl shadow-indigo-500/10">
+          <Icon className="w-10 h-10 text-indigo-400" />
         </div>
 
         {/* Badge */}
@@ -100,27 +90,17 @@ export const NotFoundView: React.FC = () => {
         </span>
 
         {/* Title */}
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-3 transition-opacity duration-200">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-3">
           {current.title}
         </h1>
 
         {/* Description */}
-        <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-sm mb-8 transition-opacity duration-200">
+        <p className="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-sm mb-6">
           {current.desc}
         </p>
 
-        {/* Fun Interactive Button */}
-        <button
-          type="button"
-          onClick={handleNextMessage}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold border border-slate-800 hover:border-slate-700 shadow-md transition-all active:scale-95 cursor-pointer"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${isRotating ? 'animate-spin' : ''}`} />
-          <span>Poke the Void (Next Message)</span>
-        </button>
-
         {/* Footer subtle note */}
-        <div className="mt-12 text-[11px] text-slate-600 font-mono">
+        <div className="mt-8 text-[11px] text-slate-600 font-mono">
           <span>Coordinates: [0.000, 0.000] • Status: Idle</span>
         </div>
       </div>
