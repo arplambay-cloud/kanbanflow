@@ -92,7 +92,7 @@ begin
   if new.role is distinct from old.role then
     if not exists (
       select 1 from public.profiles
-      where id = auth.uid() and role = 'admin'
+      where id::text = auth.uid()::text and role = 'admin'
     ) then
       raise exception 'Unauthorized: Only workspace admins may change member roles.';
     end if;
@@ -237,7 +237,7 @@ create or replace function public.is_admin()
 returns boolean as $$
   select exists (
     select 1 from public.profiles
-    where id = auth.uid() and role = 'admin'
+    where id::text = auth.uid()::text and role = 'admin'
   );
 $$ language sql security definer set search_path = public, pg_temp;
 
@@ -289,7 +289,7 @@ alter table public.task_attachments
 
 -- Policies for Authenticated users
 create policy "Allow authenticated read on profiles" on public.profiles for select using (auth.role() = 'authenticated');
-create policy "Allow profile self update" on public.profiles for update using (auth.uid() = id) with check (auth.uid() = id);
+create policy "Allow profile self update" on public.profiles for update using (auth.uid()::text = id::text) with check (auth.uid()::text = id::text);
 create policy "Allow admin update on profiles" on public.profiles for update using (public.is_admin());
 
 -- Workspace Policies
