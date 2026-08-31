@@ -172,7 +172,7 @@ export const SettingsView: React.FC = () => {
     });
 
     if (profileErr) {
-      alert('Failed to update member role: ' + (profileErr.message || 'Unknown error'));
+      notifyError('Failed to update member role: ' + (profileErr.message || 'Unknown error'));
       return;
     }
 

@@ -53,11 +53,39 @@ export default async function handler(req: any, res: any) {
   // 3. Handle admin profile updates or deletions
   const { action, userId, updates } = req.body || {};
 
+  // Never trust a role straight from the request body — whitelist it.
+  const requestedRole =
+    updates?.role === 'admin' ? 'admin' : updates?.role === 'member' ? 'member' : undefined;
+
   if (action === 'update-profile' && userId) {
+    if (updates?.role && !requestedRole) {
+      return res.status(400).json({ error: 'Role must be either "admin" or "member".' });
+    }
+
+    // Refuse a change that would leave the workspace with no admin at all.
+    if (requestedRole === 'member') {
+      const { count: adminCount } = await supabaseAdmin
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .eq('role', 'admin');
+
+      const { data: target } = await supabaseAdmin
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      if (target?.role === 'admin' && (adminCount ?? 0) <= 1) {
+        return res
+          .status(400)
+          .json({ error: 'Cannot demote the last remaining admin. Promote another admin first.' });
+      }
+    }
+
     const { error: updateErr } = await supabaseAdmin
       .from('profiles')
       .update({
-        ...(updates?.role ? { role: updates.role } : {}),
+        ...(requestedRole ? { role: requestedRole } : {}),
         ...(updates?.name ? { full_name: updates.name } : {}),
         ...(updates?.jobTitle ? { job_title: updates.jobTitle } : {}),
         ...(updates?.avatar ? { avatar_url: updates.avatar } : {}),
@@ -69,11 +97,11 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: updateErr.message });
     }
 
-    if (updates?.role || updates?.name || updates?.jobTitle) {
+    if (requestedRole || updates?.name || updates?.jobTitle) {
       await supabaseAdmin.auth.admin.updateUserById(userId, {
         user_metadata: {
           ...(updates?.name ? { display_name: updates.name, full_name: updates.name, name: updates.name } : {}),
-          ...(updates?.role ? { role: updates.role } : {}),
+          ...(requestedRole ? { role: requestedRole } : {}),
           ...(updates?.jobTitle ? { job_title: updates.jobTitle } : {}),
         },
       });
@@ -83,6 +111,30 @@ export default async function handler(req: any, res: any) {
   }
 
   if (action === 'delete-user' && userId) {
+    // An admin deleting themselves, or the last admin, would lock everyone out.
+    if (userId === caller.id) {
+      return res.status(400).json({ error: 'You cannot delete your own account.' });
+    }
+
+    const { data: target } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    if (target?.role === 'admin') {
+      const { count: adminCount } = await supabaseAdmin
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .eq('role', 'admin');
+
+      if ((adminCount ?? 0) <= 1) {
+        return res
+          .status(400)
+          .json({ error: 'Cannot delete the last remaining admin. Promote another admin first.' });
+      }
+    }
+
     await supabaseAdmin.from('profiles').delete().eq('id', userId);
     await supabaseAdmin.auth.admin.deleteUser(userId);
     return res.status(200).json({ success: true });

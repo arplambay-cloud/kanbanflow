@@ -90,11 +90,14 @@ set search_path = public, pg_temp
 as $$
 begin
   if new.role is distinct from old.role then
-    -- Allow service_role, internal superusers, or serverless APIs using service-role key
+    -- Allow internal superusers and the serverless API's service-role key.
+    -- NOTE: deliberately does NOT grant on `auth.uid() is null`. This trigger is
+    -- the last line of defence against privilege escalation, so absence of an
+    -- identity must never be treated as authority — a caller has to positively
+    -- prove it is service_role.
     if current_user in ('postgres', 'service_role', 'supabase_admin')
        or coalesce(auth.role(), '') = 'service_role'
-       or coalesce(auth.jwt() ->> 'role', '') = 'service_role'
-       or auth.uid() is null then
+       or coalesce(auth.jwt() ->> 'role', '') = 'service_role' then
       return new;
     end if;
 
