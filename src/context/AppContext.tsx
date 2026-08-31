@@ -181,6 +181,56 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     task: null,
   });
 
+  // Auto-migrate legacy board IDs (e.g. board-1, board-...) to clean random alphabetic slugs
+  useEffect(() => {
+    let hasMigration = false;
+    const boardIdMap: Record<string, string> = {};
+
+    boards.forEach((b) => {
+      if (b.id && (b.id.startsWith('board-') || b.id.startsWith('board_') || b.id === 'board-1')) {
+        // Generate an 8-character random lowercase alphabetic slug
+        const chars = 'abcdefghijklmnopqrstuvwxyz';
+        let newSlug = '';
+        for (let i = 0; i < 8; i++) {
+          newSlug += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        boardIdMap[b.id] = newSlug;
+        hasMigration = true;
+      }
+    });
+
+    if (hasMigration) {
+      setBoards((prev) =>
+        prev.map((b) => (boardIdMap[b.id] ? { ...b, id: boardIdMap[b.id] } : b))
+      );
+      setColumns((prev) =>
+        prev.map((c) =>
+          boardIdMap[c.boardId] ? { ...c, boardId: boardIdMap[c.boardId] } : c
+        )
+      );
+      setTasks((prev) =>
+        prev.map((t) =>
+          boardIdMap[t.boardId] ? { ...t, boardId: boardIdMap[t.boardId] } : t
+        )
+      );
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.boardId && boardIdMap[n.boardId]
+            ? { ...n, boardId: boardIdMap[n.boardId] }
+            : n
+        )
+      );
+
+      // If user is currently visiting a legacy /boards/board-1 URL, smoothly redirect
+      const currentPath = window.location.pathname;
+      for (const [oldId, newId] of Object.entries(boardIdMap)) {
+        if (currentPath.includes(`/boards/${oldId}`)) {
+          navigate(`/boards/${newId}`, { replace: true });
+        }
+      }
+    }
+  }, []);
+
   // Sync authenticated user into workspace users list
   useEffect(() => {
     if (authUser) {
@@ -331,7 +381,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Board Actions
   const createBoard = (title: string, description = '', color = '#4f46e5'): string => {
-    const boardId = `board-${Date.now()}`;
+    // Generate an 8-character random lowercase alphabetic slug for clean URL
+    const chars = 'abcdefghijklmnopqrstuvwxyz';
+    let boardId = '';
+    for (let i = 0; i < 8; i++) {
+      boardId += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
     const newBoard: Board = {
       id: boardId,
       title,
@@ -343,9 +399,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // Automatically create the 3 standard default columns for every new board
     const defaultCols: Column[] = [
-      { id: `col-${Date.now()}-todo`, boardId, title: 'To Do', order: 0 },
-      { id: `col-${Date.now()}-inprogress`, boardId, title: 'In Progress', order: 1 },
-      { id: `col-${Date.now()}-done`, boardId, title: 'Done', order: 2 },
+      { id: `col-${boardId}-todo`, boardId, title: 'To Do', order: 0 },
+      { id: `col-${boardId}-inprogress`, boardId, title: 'In Progress', order: 1 },
+      { id: `col-${boardId}-done`, boardId, title: 'Done', order: 2 },
     ];
 
     setBoards((prev) => [newBoard, ...prev]);
