@@ -28,9 +28,14 @@ export const AppContent: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
-  // Check if URL contains Supabase password recovery hash
+  // Check if URL contains Supabase password recovery or invitation hash
   useEffect(() => {
-    if (window.location.hash.includes('type=recovery')) {
+    const hash = window.location.hash;
+    if (
+      hash.includes('type=recovery') ||
+      hash.includes('type=invite') ||
+      hash.includes('type=signup')
+    ) {
       setIsPasswordRecovery(true);
     }
   }, [location]);
