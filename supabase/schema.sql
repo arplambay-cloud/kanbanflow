@@ -333,11 +333,11 @@ create policy "Members manage tasks" on public.tasks
 create policy "Members read comments" on public.task_comments
   for select using (auth.role() = 'authenticated');
 create policy "Members post own comments" on public.task_comments
-  for insert with check (user_id = auth.uid());
+  for insert with check (user_id::text = auth.uid()::text);
 create policy "Authors update own comments" on public.task_comments
-  for update using (user_id = auth.uid() or public.is_admin());
+  for update using (user_id::text = auth.uid()::text or public.is_admin());
 create policy "Authors delete own comments" on public.task_comments
-  for delete using (user_id = auth.uid() or public.is_admin());
+  for delete using (user_id::text = auth.uid()::text or public.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- TASK ATTACHMENTS — anyone may read and upload; only the uploader (or an admin)
@@ -348,15 +348,15 @@ create policy "Members read attachments" on public.task_attachments
 create policy "Members add attachments" on public.task_attachments
   for insert with check (auth.role() = 'authenticated');
 create policy "Uploader deletes attachments" on public.task_attachments
-  for delete using (uploader_id = auth.uid() or public.is_admin());
+  for delete using (uploader_id::text = auth.uid()::text or public.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- NOTIFICATIONS (recipient-scoped)
 -- ------------------------------------------------------------------------------
-create policy "Allow recipient read on notifications" on public.notifications for select using (auth.uid() = recipient_id);
+create policy "Allow recipient read on notifications" on public.notifications for select using (recipient_id::text = auth.uid()::text);
 create policy "Allow authenticated insert notifications" on public.notifications for insert with check (auth.role() = 'authenticated');
-create policy "Allow recipient update notifications" on public.notifications for update using (auth.uid() = recipient_id);
-create policy "Allow recipient delete notifications" on public.notifications for delete using (auth.uid() = recipient_id);
+create policy "Allow recipient update notifications" on public.notifications for update using (recipient_id::text = auth.uid()::text);
+create policy "Allow recipient delete notifications" on public.notifications for delete using (recipient_id::text = auth.uid()::text);
 
 -- ------------------------------------------------------------------------------
 -- ACTIVITY LOGS — append-only audit trail. You may only write entries attributed
@@ -365,7 +365,7 @@ create policy "Allow recipient delete notifications" on public.notifications for
 create policy "Members read activity" on public.activity_logs
   for select using (auth.role() = 'authenticated');
 create policy "Members append own activity" on public.activity_logs
-  for insert with check (user_id = auth.uid());
+  for insert with check (user_id::text = auth.uid()::text);
 create policy "Admins prune activity" on public.activity_logs
   for delete using (public.is_admin());
 
