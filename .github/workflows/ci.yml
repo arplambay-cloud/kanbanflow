@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+      # Guards against the exact regression that shipped in 5999c20: the
+      # Cache-Control headers were silently dropped from vercel.json, which
+      # re-introduced a blank-page bug caused by a stale index.html.
+      - name: Verify vercel.json cache headers are present
+        run: |
+          node -e "
+            const cfg = require('./vercel.json');
+            const rules = (cfg.headers || []).flatMap(h => h.headers || []);
+            const cacheRules = rules.filter(r => r.key === 'Cache-Control');
+            if (cacheRules.length < 2) {
+              console.error('FAIL: vercel.json must define Cache-Control for both / and /assets/*');
+              process.exit(1);
+            }
+            const hasNoCache = cacheRules.some(r => /no-store|no-cache/.test(r.value));
+            const hasImmutable = cacheRules.some(r => /immutable/.test(r.value));
+            if (!hasNoCache || !hasImmutable) {
+              console.error('FAIL: need no-cache for HTML and immutable for hashed assets');
+              process.exit(1);
+            }
+            console.log('OK: cache headers present');
+          "
