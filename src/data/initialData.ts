@@ -1,4 +1,4 @@
-﻿import { User, Board, Column, Task, Notification, ActivityLog, Workspace } from '../types';
+import { User, Board, Column, Task, Notification, ActivityLog, Workspace } from '../types';
 
 export const initialUsers: User[] = [];
 

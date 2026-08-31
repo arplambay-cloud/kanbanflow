@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Draggable } from '@hello-pangea/dnd';
 import { Task, Column } from '../../types';
 import { useApp } from '../../context/AppContext';
