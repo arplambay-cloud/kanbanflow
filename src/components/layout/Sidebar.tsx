@@ -83,15 +83,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-indigo-100 shrink-0 font-bold text-lg">
-              <Kanban className="w-5 h-5 text-white" />
+              <Building2 className="w-5 h-5 text-white" />
             </div>
             <div className="flex flex-col min-w-0">
               <span className="font-bold text-slate-900 text-sm tracking-tight truncate">
                 {workspace.name}
               </span>
-              <span className="text-[11px] text-slate-500 font-medium flex items-center gap-1.5 mt-0.5">
-                <Building2 className="w-3 h-3 text-indigo-600" />
-                <span>Workspace</span>
+              <span className="text-[11px] text-slate-500 font-medium mt-0.5">
+                Workspace
               </span>
             </div>
           </div>
