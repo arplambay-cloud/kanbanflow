@@ -260,6 +260,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setSession(null);
     localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
     localStorage.removeItem('kf_current_user_id_v3');
+    localStorage.removeItem('kf_require_password_setup');
   };
 
   // Reset Password via Supabase
@@ -280,9 +281,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (isSupabaseConfigured && supabase) {
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
+        data: {
+          has_set_password: true,
+          password_updated_at: new Date().toISOString(),
+        },
       });
+      if (!error) {
+        localStorage.removeItem('kf_require_password_setup');
+      }
       return { error };
     }
+    localStorage.removeItem('kf_require_password_setup');
     return { error: null };
   };
 

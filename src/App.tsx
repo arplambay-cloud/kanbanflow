@@ -26,20 +26,27 @@ export const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState<boolean>(() => {
+    return localStorage.getItem('kf_require_password_setup') === 'true';
+  });
 
   // Check if URL contains Supabase password recovery or invitation hash
   useEffect(() => {
     const hash = window.location.hash;
-    if (
+    const isInviteOrRecovery =
       hash.includes('type=recovery') ||
       hash.includes('type=invite') ||
       hash.includes('type=signup') ||
-      location.pathname === '/set-password'
-    ) {
+      location.pathname === '/set-password' ||
+      localStorage.getItem('kf_require_password_setup') === 'true';
+
+    if (isInviteOrRecovery) {
       setIsPasswordRecovery(true);
+      localStorage.setItem('kf_require_password_setup', 'true');
       // Clean ugly hash from address bar and show neat /set-password URL
-      window.history.replaceState(null, '', '/set-password');
+      if (window.location.hash) {
+        window.history.replaceState(null, '', '/set-password');
+      }
     }
   }, [location]);
 
@@ -57,11 +64,17 @@ export const AppContent: React.FC = () => {
     );
   }
 
-  // Handle password recovery / invitation flow
-  if (isPasswordRecovery || location.pathname === '/set-password') {
+  // Handle password recovery / invitation flow — STRICT GATE
+  const requirePassword =
+    isPasswordRecovery ||
+    location.pathname === '/set-password' ||
+    localStorage.getItem('kf_require_password_setup') === 'true';
+
+  if (requirePassword) {
     return (
       <ResetPasswordView
         onSuccess={() => {
+          localStorage.removeItem('kf_require_password_setup');
           setIsPasswordRecovery(false);
           window.history.replaceState(null, '', '/dashboard');
           window.location.href = '/dashboard';
