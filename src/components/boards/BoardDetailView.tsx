@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { useApp } from '../../context/AppContext';
@@ -30,6 +30,7 @@ const BoardDetailContent: React.FC = () => {
     deleteColumn,
     openTaskModal,
     users,
+    setIsDragging,
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -211,7 +212,13 @@ const BoardDetailContent: React.FC = () => {
       </div>
 
       {/* Kanban Columns Horizontal Canvas */}
-      <DragDropContext onDragEnd={handleDragEnd}>
+      <DragDropContext
+        onDragStart={() => setIsDragging(true)}
+        onDragEnd={(result) => {
+          setIsDragging(false);
+          handleDragEnd(result);
+        }}
+      >
         <div className="flex-1 overflow-x-auto p-4 sm:p-6 flex items-start gap-4 sm:gap-5">
           {boardColumns.map((column) => {
             const columnTasks = filteredTasks

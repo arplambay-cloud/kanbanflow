@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
 import { CustomDropdown } from '../common/CustomDropdown';
+import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { PriorityBadge } from '../common/PriorityBadge';
 import { formatDate } from '../../utils/date';
 import { ConfirmDialog } from '../common/ConfirmDialog';
@@ -120,7 +121,7 @@ export const UsersView: React.FC = () => {
   });
 
   // Handle local file uploads
-  const handleFileUpload = (
+  const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     setTargetAvatar: (val: string) => void
   ) => {
@@ -130,6 +131,29 @@ export const UsersView: React.FC = () => {
     if (file.size > 5 * 1024 * 1024) {
       alert('Image size exceeds 5MB limit. Please choose a smaller photo.');
       return;
+    }
+
+    try {
+      if (isSupabaseConfigured && supabase) {
+        const fileExt = file.name.split('.').pop() || 'jpg';
+        const filePath = `avatars/avatar_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(filePath);
+
+          const publicUrl = publicUrlData?.publicUrl || filePath;
+          setTargetAvatar(publicUrl);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Supabase avatar upload fallback:', err);
     }
 
     const reader = new FileReader();
@@ -143,10 +167,8 @@ export const UsersView: React.FC = () => {
 
   const generatePassword = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
-    let pass = '';
-    for (let i = 0; i < 10; i++) {
-      pass += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
+    const bytes = crypto.getRandomValues(new Uint32Array(14));
+    const pass = Array.from(bytes, (b) => chars[b % chars.length]).join('');
     setNewPassword(pass);
     setShowPassword(true);
   };

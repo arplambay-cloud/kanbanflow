@@ -48,15 +48,18 @@ export const DashboardView: React.FC = () => {
       .map((c) => c.id)
   );
 
-  const completedTasks = tasks.filter((t) => doneColumnIds.has(t.columnId));
-  const inProgressTasks = tasks.filter((t) => inProgressColumnIds.has(t.columnId));
-  const myAssignedTasks = tasks.filter((t) => t.assigneeId === currentUser.id);
+  const completedTasks = (tasks || []).filter((t) => t && doneColumnIds.has(t.columnId));
+  const inProgressTasks = (tasks || []).filter((t) => t && inProgressColumnIds.has(t.columnId));
+  const myAssignedTasks = (tasks || []).filter((t) => t && t.assigneeId === (currentUser?.id || ''));
   const myPendingTasks = myAssignedTasks.filter(
     (t) => !doneColumnIds.has(t.columnId)
   );
 
   const completionRate =
     totalTasks > 0 ? Math.round((completedTasks.length / totalTasks) * 100) : 0;
+
+  const userDisplayName = (currentUser?.name || 'User').trim() || 'User';
+  const firstName = userDisplayName.split(' ')[0];
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8">
@@ -73,7 +76,7 @@ export const DashboardView: React.FC = () => {
               <span>{workspace.name}</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-              Welcome back, {currentUser.name.split(' ')[0]}! 👋
+              Welcome back, {firstName}! 👋
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-xl">
               You have{' '}

@@ -17,6 +17,7 @@ import { SecretLoginView } from './components/auth/SecretLoginView';
 import { NotFoundView } from './components/auth/NotFoundView';
 import { ResetPasswordView } from './components/auth/ResetPasswordView';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { RequireAdmin } from './components/common/RequireAdmin';
 import { Kanban, Loader2 } from 'lucide-react';
 
 const SECRET_LOGIN_PATH = (
@@ -80,6 +81,12 @@ export const AppContent: React.FC = () => {
           window.history.replaceState(null, '', '/dashboard');
           window.location.href = '/dashboard';
         }}
+        onCancel={() => {
+          localStorage.removeItem('kf_require_password_setup');
+          setIsPasswordRecovery(false);
+          window.history.replaceState(null, '', SECRET_LOGIN_PATH);
+          window.location.href = SECRET_LOGIN_PATH;
+        }}
       />
     );
   }
@@ -125,7 +132,14 @@ export const AppContent: React.FC = () => {
               <Route path="/boards/:boardId" element={<BoardDetailView />} />
               <Route path="/tasks" element={<TaskListView />} />
               <Route path="/notifications" element={<NotificationsView />} />
-              <Route path="/users" element={<UsersView />} />
+              <Route
+                path="/users"
+                element={
+                  <RequireAdmin>
+                    <UsersView />
+                  </RequireAdmin>
+                }
+              />
               <Route path="/profile" element={<ProfileView />} />
               <Route path="/settings" element={<SettingsView />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />

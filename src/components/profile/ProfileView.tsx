@@ -72,7 +72,7 @@ export const ProfileView: React.FC = () => {
       ? Math.round((completedTasks.length / assignedTasks.length) * 100)
       : 0;
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -81,23 +81,46 @@ export const ProfileView: React.FC = () => {
       return;
     }
 
+    try {
+      if (isSupabaseConfigured && supabase) {
+        const fileExt = file.name.split('.').pop() || 'jpg';
+        const filePath = `${currentUser.id}/avatar_${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(filePath);
+
+          const publicUrl = publicUrlData?.publicUrl || filePath;
+          setAvatar(publicUrl);
+          updateUser(currentUser.id, { avatar: publicUrl });
+
+          await supabase
+            .from('profiles')
+            .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+            .eq('id', currentUser.id);
+
+          await supabase.auth.updateUser({
+            data: { avatar_url: publicUrl },
+          });
+
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Supabase avatar upload fallback:', err);
+    }
+
     const reader = new FileReader();
     reader.onload = async () => {
       if (typeof reader.result === 'string') {
         const dataUrl = reader.result;
         setAvatar(dataUrl);
         updateUser(currentUser.id, { avatar: dataUrl });
-
-        if (isSupabaseConfigured && supabase) {
-          try {
-            await supabase
-              .from('profiles')
-              .update({ avatar_url: dataUrl, updated_at: new Date().toISOString() })
-              .eq('id', currentUser.id);
-          } catch (err) {
-            console.warn('Supabase profile avatar update:', err);
-          }
-        }
       }
     };
     reader.readAsDataURL(file);

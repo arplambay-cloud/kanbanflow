@@ -33,7 +33,7 @@ interface AuthContextType {
   updateMemberProfile: (
     userId: string,
     updates: { role?: 'admin' | 'member'; full_name?: string; job_title?: string; avatar_url?: string }
-  ) => Promise<void>;
+  ) => Promise<{ error?: any }>;
 }
 
 const LOCAL_STORAGE_USER_KEY = 'kanbanflow_auth_user';
@@ -181,7 +181,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (mounted) setLoading(false);
           });
         } else {
-          // No active Supabase session -> clear any old local storage user
           setUser(null);
           localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
           setLoading(false);
@@ -234,18 +233,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return { error: null };
     }
 
-    // Local fallback
-    const mockUser: User = {
-      id: 'local-admin-1',
-      name: cleanEmail.split('@')[0] || 'User',
-      email: cleanEmail,
-      avatar: '',
-      role: 'admin',
-      jobTitle: 'Workspace Admin',
-    };
-    setUser(mockUser);
-    localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(mockUser));
-    return { error: null };
+    return { error: new Error('Authentication service is not configured.') };
   };
 
   // Sign Up
@@ -286,19 +274,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return { error: null, needsEmailConfirmation };
     }
 
-    // Local fallback sign up
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      name: trimmedName,
-      email: cleanEmail,
-      avatar: '',
-      role: 'member',
-      jobTitle,
-    };
-
-    setUser(newUser);
-    localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(newUser));
-    return { error: null, needsEmailConfirmation: false };
+    return { error: new Error('Authentication service is not configured.'), needsEmailConfirmation: false };
   };
 
   // Sign Out
@@ -321,13 +297,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const resetPassword = async (email: string) => {
     const cleanEmail = email.toLowerCase().trim();
     if (isSupabaseConfigured && supabase) {
-      const redirectUrl = `${window.location.origin}/#type=recovery`;
+      const redirectUrl = `${window.location.origin}/set-password`;
       const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
         redirectTo: redirectUrl,
       });
       return { error };
     }
-    return { error: null };
+    return { error: new Error('Supabase not configured.') };
   };
 
   // Update Password and Name in Supabase
@@ -377,7 +353,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { error: null };
   };
 
-  // Invite Team Member via Email
+  // Invite Team Member via Authenticated Admin API
   const inviteMember = async (
     email: string,
     fullName: string,
@@ -385,24 +361,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     jobTitle: string = 'Team Member'
   ): Promise<{ error: any; emailSent: boolean }> => {
     const cleanEmail = email.toLowerCase().trim();
-    let emailSent = false;
+    const cleanName = fullName.trim() || cleanEmail.split('@')[0];
 
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const redirectUrl = `${window.location.origin}/#type=recovery`;
-        const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
-          redirectTo: redirectUrl,
-        });
-        if (!error) emailSent = true;
-      } catch (e) {
-        console.warn('Supabase invite notice:', e);
+    try {
+      const { data: sessionData } = (isSupabaseConfigured && supabase)
+        ? await supabase.auth.getSession()
+        : { data: { session: null } };
+
+      const response = await fetch('/api/create-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(sessionData?.session?.access_token
+            ? { Authorization: `Bearer ${sessionData.session.access_token}` }
+            : {}),
+        },
+        body: JSON.stringify({
+          email: cleanEmail,
+          fullName: cleanName,
+          role,
+          jobTitle,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok || result.error) {
+        return { error: new Error(result.error || 'Failed to send invite.'), emailSent: false };
       }
-    }
 
-    return { error: null, emailSent };
+      return { error: null, emailSent: true };
+    } catch (err: any) {
+      return { error: err, emailSent: false };
+    }
   };
 
-  // Create Team Member directly with Pre-set Password in Supabase
+  // Create Team Member directly with Pre-set Password in Supabase via Admin API
   const createMemberWithPassword = async (
     email: string,
     password: string,
@@ -412,14 +405,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   ): Promise<{ error: any; user?: User }> => {
     const cleanEmail = email.toLowerCase().trim();
     const cleanName = fullName.trim() || cleanEmail.split('@')[0];
+    const cleanPassword = password.trim();
 
     try {
+      const { data: sessionData } = (isSupabaseConfigured && supabase)
+        ? await supabase.auth.getSession()
+        : { data: { session: null } };
+
       const response = await fetch('/api/create-user', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(sessionData?.session?.access_token
+            ? { Authorization: `Bearer ${sessionData.session.access_token}` }
+            : {}),
+        },
         body: JSON.stringify({
           email: cleanEmail,
-          password,
+          password: cleanPassword,
           fullName: cleanName,
           role,
           jobTitle,
@@ -442,18 +445,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       return { error: null, user: createdUser };
     } catch (err: any) {
-      console.warn('Error calling /api/create-user:', err);
-      return {
-        error: null,
-        user: {
-          id: `user-${Date.now()}`,
-          name: cleanName,
-          email: cleanEmail,
-          role,
-          jobTitle,
-          avatar: '',
-        },
-      };
+      return { error: err };
     }
   };
 
@@ -461,20 +453,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateMemberProfile = async (
     userId: string,
     updates: { role?: 'admin' | 'member'; full_name?: string; job_title?: string; avatar_url?: string }
-  ) => {
+  ): Promise<{ error?: any }> => {
     if (isSupabaseConfigured && supabase && userId) {
       try {
-        await supabase
+        const { error } = await supabase
           .from('profiles')
           .update({
             ...updates,
             updated_at: new Date().toISOString(),
           })
           .eq('id', userId);
+
+        if (error) return { error };
       } catch (err) {
-        console.warn('Error updating Supabase profile:', err);
+        return { error: err };
       }
     }
+    return { error: null };
   };
 
   return (

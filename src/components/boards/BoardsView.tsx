@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Board } from '../../types';
 import {
@@ -13,8 +13,8 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
-import { formatDate } from '../../utils/date';
 import { ConfirmDialog } from '../common/ConfirmDialog';
+import { ErrorBoundary } from '../common/ErrorBoundary';
 
 const PRESET_COLORS = [
   '#7c3bed', // Primary Brand Purple
@@ -27,8 +27,8 @@ const PRESET_COLORS = [
   '#ef4444', // Red
 ];
 
-export const BoardsView: React.FC = () => {
-  const { boards, columns, tasks, createBoard, deleteBoard, navigateToBoard } =
+const BoardsContent: React.FC = () => {
+  const { boards, columns, tasks, createBoard, updateBoard, deleteBoard, navigateToBoard } =
     useApp();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -37,6 +37,12 @@ export const BoardsView: React.FC = () => {
   const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0]);
   const [error, setError] = useState('');
   const [boardToDelete, setBoardToDelete] = useState<Board | null>(null);
+
+  // Edit Board Modal state
+  const [editingBoard, setEditingBoard] = useState<Board | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editColor, setEditColor] = useState(PRESET_COLORS[0]);
 
   const handleCreateBoard = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +64,19 @@ export const BoardsView: React.FC = () => {
     navigateToBoard(newBoardId);
   };
 
+  const handleSaveBoardEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingBoard || !editTitle.trim()) return;
+
+    updateBoard(editingBoard.id, {
+      title: editTitle.trim(),
+      description: editDescription.trim(),
+      color: editColor,
+    });
+
+    setEditingBoard(null);
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Page Header */}
@@ -73,7 +92,7 @@ export const BoardsView: React.FC = () => {
 
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg font-semibold text-xs sm:text-sm shadow-sm hover:shadow transition-all"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg font-semibold text-xs sm:text-sm shadow-sm hover:shadow transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Create Board</span>
@@ -99,12 +118,13 @@ export const BoardsView: React.FC = () => {
         </button>
 
         {/* Existing Boards */}
-        {boards.map((board) => {
-          const boardCols = columns.filter((c) => c.boardId === board.id);
-          const boardTasks = tasks.filter((t) => t.boardId === board.id);
+        {(boards || []).map((board) => {
+          if (!board || !board.id) return null;
+          const boardCols = (columns || []).filter((c) => c && c.boardId === board.id);
+          const boardTasks = (tasks || []).filter((t) => t && t.boardId === board.id);
           const completedTasks = boardTasks.filter((t) => {
             const col = boardCols.find((c) => c.id === t.columnId);
-            return col?.title.toLowerCase().includes('done');
+            return col?.title?.toLowerCase().includes('done');
           });
 
           return (
@@ -126,16 +146,29 @@ export const BoardsView: React.FC = () => {
                     </h3>
                   </div>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setBoardToDelete(board);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                    title="Delete board"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingBoard(board);
+                        setEditTitle(board.title);
+                        setEditDescription(board.description || '');
+                        setEditColor(board.color || PRESET_COLORS[0]);
+                      }}
+                      className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
+                      title="Edit board"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBoardToDelete(board)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                      title="Delete board"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
@@ -261,7 +294,7 @@ export const BoardsView: React.FC = () => {
                       key={c}
                       type="button"
                       onClick={() => setSelectedColor(c)}
-                      className={`w-7 h-7 rounded-lg transition-all ${
+                      className={`w-7 h-7 rounded-lg transition-all cursor-pointer ${
                         selectedColor === c
                           ? 'ring-2 ring-offset-2 ring-slate-800 scale-110'
                           : 'hover:scale-105'
@@ -281,13 +314,13 @@ export const BoardsView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg shadow-sm transition-all"
+                  className="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg shadow-sm transition-all cursor-pointer"
                 >
                   Create Board
                 </button>
@@ -297,7 +330,98 @@ export const BoardsView: React.FC = () => {
         </div>
       )}
 
-      {/* Delete Board In-App Confirmation Dialog */}
+      {/* Edit Board Modal */}
+      {editingBoard && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+          <div
+            className="w-full max-w-md bg-white rounded-xl shadow-floating border border-slate-200 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+              <div className="flex items-center gap-2">
+                <Edit2 className="w-4 h-4 text-indigo-600" />
+                <h3 className="font-semibold text-slate-800 text-base">
+                  Edit Board Details
+                </h3>
+              </div>
+              <button
+                onClick={() => setEditingBoard(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveBoardEdit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Board Title <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="What is this board for?"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+                  Board Theme Color
+                </label>
+                <div className="flex items-center gap-2.5">
+                  {PRESET_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setEditColor(c)}
+                      className={`w-7 h-7 rounded-lg transition-all cursor-pointer ${
+                        editColor === c
+                          ? 'ring-2 ring-offset-2 ring-slate-800 scale-110'
+                          : 'hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingBoard(null)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg shadow-sm transition-all cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Board Confirmation Dialog */}
       {boardToDelete && (
         <ConfirmDialog
           isOpen={!!boardToDelete}
@@ -314,5 +438,13 @@ export const BoardsView: React.FC = () => {
         />
       )}
     </div>
+  );
+};
+
+export const BoardsView: React.FC = () => {
+  return (
+    <ErrorBoundary fallbackTitle="Unable to display Boards">
+      <BoardsContent />
+    </ErrorBoundary>
   );
 };

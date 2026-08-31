@@ -10,14 +10,16 @@ import {
   Eye,
   EyeOff,
   KeyRound,
+  LogOut,
 } from 'lucide-react';
 
 interface ResetPasswordViewProps {
   onSuccess: () => void;
+  onCancel?: () => void;
 }
 
-export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ onSuccess }) => {
-  const { user, updatePassword } = useAuth();
+export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ onSuccess, onCancel }) => {
+  const { user, updatePassword, signOut } = useAuth();
   const [fullName, setFullName] = useState(user?.name && user.name !== 'User' ? user.name : '');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -37,8 +39,8 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ onSuccess 
       setError('Please fill in both password fields.');
       return;
     }
-    if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters long.');
+    if (newPassword.length < 8) {
+      setError('Password must be at least 8 characters long for security.');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -62,6 +64,16 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ onSuccess 
     }
   };
 
+  const handleBackToLogin = async () => {
+    localStorage.removeItem('kf_require_password_setup');
+    await signOut();
+    if (onCancel) {
+      onCancel();
+    } else {
+      window.location.href = '/access';
+    }
+  };
+
   return (
     <div className="min-h-screen w-screen bg-slate-950 flex flex-col justify-center items-center p-4 sm:p-6 relative overflow-hidden font-sans text-slate-100">
       {/* Ambient background glow */}
@@ -78,7 +90,7 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ onSuccess 
             Account Setup
           </h1>
           <p className="text-xs text-slate-400 mt-1 font-medium">
-            Please enter your name and choose a secure password to activate your account.
+            Please enter your name and choose a secure password (min 8 characters).
           </p>
         </div>
 
@@ -121,7 +133,7 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ onSuccess 
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Umair Khan"
+                  placeholder="e.g. Maya Lin"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-700/80 bg-slate-950/60 text-white text-xs sm:text-sm font-medium placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all"
@@ -132,7 +144,7 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ onSuccess 
             {/* New Password */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                New Password <span className="text-rose-400">*</span>
+                New Password (min. 8 chars) <span className="text-rose-400">*</span>
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -206,6 +218,18 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ onSuccess 
                 </>
               )}
             </button>
+
+            {/* Escape Hatch Button */}
+            <div className="pt-2 text-center">
+              <button
+                type="button"
+                onClick={handleBackToLogin}
+                className="text-xs text-slate-400 hover:text-white font-medium hover:underline inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Cancel & Return to Sign In</span>
+              </button>
+            </div>
           </form>
         )}
       </div>

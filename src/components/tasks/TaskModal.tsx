@@ -23,6 +23,7 @@ import {
 import { UserAvatar } from '../common/UserAvatar';
 import { CustomDropdown } from '../common/CustomDropdown';
 import { formatDate } from '../../utils/date';
+import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { PRIORITY_CONFIG } from '../../utils/priorityConfig';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 
@@ -208,13 +209,41 @@ export const TaskModal: React.FC = () => {
     setNewCommentText('');
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !task) return;
 
     if (file.size > 10 * 1024 * 1024) {
       alert('File size exceeds 10MB limit.');
       return;
+    }
+
+    try {
+      if (isSupabaseConfigured && supabase) {
+        const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const filePath = `${task.id}/${Date.now()}_${safeName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('attachments')
+          .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage
+            .from('attachments')
+            .getPublicUrl(filePath);
+
+          addAttachment(task.id, {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            url: publicUrlData?.publicUrl || filePath,
+          });
+          e.target.value = '';
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Supabase storage upload fallback:', err);
     }
 
     const reader = new FileReader();

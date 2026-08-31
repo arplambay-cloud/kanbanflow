@@ -83,10 +83,8 @@ export const SettingsView: React.FC = () => {
 
   const generateMemberPassword = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
-    let pass = '';
-    for (let i = 0; i < 10; i++) {
-      pass += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
+    const bytes = crypto.getRandomValues(new Uint32Array(14));
+    const pass = Array.from(bytes, (b) => chars[b % chars.length]).join('');
     setNewMemberPassword(pass);
     setShowMemberPassword(true);
   };
