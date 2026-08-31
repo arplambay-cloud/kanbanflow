@@ -90,12 +90,24 @@ set search_path = public, pg_temp
 as $$
 begin
   if new.role is distinct from old.role then
-    if not exists (
+    -- Allow service_role, internal superusers, or serverless APIs using service-role key
+    if current_user in ('postgres', 'service_role', 'supabase_admin')
+       or coalesce(auth.role(), '') = 'service_role'
+       or coalesce(auth.jwt() ->> 'role', '') = 'service_role'
+       or auth.uid() is null then
+      return new;
+    end if;
+
+    -- Allow authenticated admin users
+    if exists (
       select 1 from public.profiles
       where id::text = auth.uid()::text and role = 'admin'
     ) then
-      raise exception 'Unauthorized: Only workspace admins may change member roles.';
+      return new;
     end if;
+
+    -- Block unauthorized role escalation
+    raise exception 'Unauthorized: Only workspace admins may change member roles.';
   end if;
   return new;
 end;
