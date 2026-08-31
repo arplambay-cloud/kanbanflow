@@ -6,10 +6,10 @@ import {
   Radio,
   Zap,
   RefreshCw,
-  Compass,
-  EyeOff,
   Cat,
   Bot,
+  Gamepad2,
+  Cookie,
 } from 'lucide-react';
 
 const FUNNY_MESSAGES = [
@@ -49,10 +49,25 @@ const FUNNY_MESSAGES = [
     desc: 'This dimensional coordinate has expired. Any further attempts to explore may result in unexpected spaghetti code.',
     badge: 'QUANTUM BLOCKED',
   },
+  {
+    icon: Cookie,
+    title: 'Here, have a virtual cookie 🍪',
+    desc: "You didn't find what you were looking for, but you found a delicious cookie. Take it and go on with your day.",
+    badge: 'SNACK BREAK',
+  },
+  {
+    icon: Gamepad2,
+    title: 'You have entered an empty level',
+    desc: 'The game developers haven\'t built anything here yet. Press Alt+F4 or find another quest.',
+    badge: 'LEVEL 0',
+  },
 ];
 
 export const NotFoundView: React.FC = () => {
-  const [index, setIndex] = useState(0);
+  // Random message on initial page load / refresh
+  const [index, setIndex] = useState(() =>
+    Math.floor(Math.random() * FUNNY_MESSAGES.length)
+  );
   const [isRotating, setIsRotating] = useState(false);
 
   const current = FUNNY_MESSAGES[index];

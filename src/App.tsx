@@ -19,7 +19,7 @@ import { ResetPasswordView } from './components/auth/ResetPasswordView';
 import { Kanban, Loader2 } from 'lucide-react';
 
 const SECRET_LOGIN_PATH = (
-  import.meta.env.VITE_SECRET_LOGIN_PATH || '/secret-login'
+  import.meta.env.VITE_SECRET_LOGIN_PATH || '/access'
 ).toLowerCase().replace(/^\/?/, '/');
 
 export const AppContent: React.FC = () => {
@@ -63,14 +63,14 @@ export const AppContent: React.FC = () => {
 
   const currentPath = location.pathname.toLowerCase().replace(/\/$/, '') || '/';
   const isSecretLoginRoute =
-    currentPath === SECRET_LOGIN_PATH || currentPath === '/secret' || currentPath === '/secret-login';
+    currentPath === SECRET_LOGIN_PATH || currentPath === '/access';
 
   // If user is not authenticated:
   if (!user) {
     if (isSecretLoginRoute) {
       return <SecretLoginView />;
     }
-    // Any other URL without auth shows a discreet 404
+    // Any other URL without auth shows the mysterious landing view
     return <NotFoundView />;
   }
 
