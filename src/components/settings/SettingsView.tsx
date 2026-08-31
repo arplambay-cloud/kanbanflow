@@ -25,6 +25,7 @@ import { CustomDropdown } from '../common/CustomDropdown';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
 import { User } from '../../types';
+import { notifyError, notifySuccess } from '../../utils/toast';
 
 export const SettingsView: React.FC = () => {
   const { inviteMember, createMemberWithPassword, updateMemberProfile } = useAuth();
@@ -114,7 +115,7 @@ export const SettingsView: React.FC = () => {
         );
 
         if (error) {
-          alert(`Failed to create user in Supabase: ${error.message}`);
+          notifyError(`Failed to create user in Supabase: ${error.message}`);
           setIsCreatingMember(false);
           return;
         }
@@ -145,7 +146,7 @@ export const SettingsView: React.FC = () => {
       setNewMemberPassword('');
       setIsAddingMember(false);
     } catch (err: any) {
-      alert(err.message || 'Error adding team member.');
+      notifyError(err.message || 'Error adding team member.');
     } finally {
       setIsCreatingMember(false);
     }
@@ -182,7 +183,7 @@ export const SettingsView: React.FC = () => {
 
   const handleDeleteMember = (memberId: string, memberName: string) => {
     if (memberId === currentUser.id) {
-      alert('You cannot remove your own active account from the workspace.');
+      notifyError('You cannot remove your own active account from the workspace.');
       return;
     }
     setConfirmDialog({
@@ -507,7 +508,7 @@ export const SettingsView: React.FC = () => {
                     type="button"
                     onClick={async () => {
                       await inviteMember(editEmail.trim(), editName.trim(), editRole, editTitle.trim());
-                      alert(`Password setup link sent to ${editEmail.trim()}`);
+                      notifySuccess(`Password setup link sent to ${editEmail.trim()}`);
                     }}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors cursor-pointer shadow-xs"
                   >

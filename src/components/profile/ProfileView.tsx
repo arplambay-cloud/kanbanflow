@@ -23,6 +23,7 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { UserAvatar } from '../common/UserAvatar';
 import { PriorityBadge } from '../common/PriorityBadge';
 import { formatDate, isOverdue } from '../../utils/date';
+import { notifyError } from '../../utils/toast';
 
 export const ProfileView: React.FC = () => {
   const {
@@ -77,7 +78,7 @@ export const ProfileView: React.FC = () => {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('Photo size exceeds 5MB limit. Please upload a smaller image file.');
+      notifyError('Photo size exceeds 5MB limit. Please upload a smaller image file.');
       return;
     }
 
@@ -91,7 +92,7 @@ export const ProfileView: React.FC = () => {
           .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
         if (uploadError) {
-          alert('Photo upload failed: ' + uploadError.message);
+          notifyError('Photo upload failed: ' + uploadError.message);
           return;
         }
 
@@ -115,7 +116,7 @@ export const ProfileView: React.FC = () => {
         return;
       }
     } catch (err: any) {
-      alert('Photo upload failed: ' + (err.message || 'Unknown error occurred'));
+      notifyError('Photo upload failed: ' + (err.message || 'Unknown error occurred'));
     }
   };
 

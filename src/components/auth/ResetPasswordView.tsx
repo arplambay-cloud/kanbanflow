@@ -39,8 +39,12 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({ onSuccess,
       setError('Please fill in both password fields.');
       return;
     }
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters long for security.');
+    if (newPassword.length < 12) {
+      setError('Password must be at least 12 characters long for security.');
+      return;
+    }
+    if (!/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      setError('Password must contain at least one letter and one number.');
       return;
     }
     if (newPassword !== confirmPassword) {

@@ -260,6 +260,33 @@ drop policy if exists "Allow recipient update notifications" on public.notificat
 drop policy if exists "Allow recipient delete notifications" on public.notifications;
 drop policy if exists "Allow authenticated all on activity_logs" on public.activity_logs;
 
+-- Drop the granular policies too, so this file stays safely re-runnable
+drop policy if exists "Members read boards" on public.boards;
+drop policy if exists "Members create boards" on public.boards;
+drop policy if exists "Members update boards" on public.boards;
+drop policy if exists "Admins delete boards" on public.boards;
+drop policy if exists "Members read columns" on public.columns;
+drop policy if exists "Members create columns" on public.columns;
+drop policy if exists "Members update columns" on public.columns;
+drop policy if exists "Admins delete columns" on public.columns;
+drop policy if exists "Members manage tasks" on public.tasks;
+drop policy if exists "Members read comments" on public.task_comments;
+drop policy if exists "Members post own comments" on public.task_comments;
+drop policy if exists "Authors update own comments" on public.task_comments;
+drop policy if exists "Authors delete own comments" on public.task_comments;
+drop policy if exists "Members read attachments" on public.task_attachments;
+drop policy if exists "Members add attachments" on public.task_attachments;
+drop policy if exists "Uploader deletes attachments" on public.task_attachments;
+drop policy if exists "Members read activity" on public.activity_logs;
+drop policy if exists "Members append own activity" on public.activity_logs;
+drop policy if exists "Admins prune activity" on public.activity_logs;
+
+-- Attribute attachment uploads to the caller so deletes can be scoped to the
+-- uploader. Additive and safe on existing data (older rows stay null and are
+-- therefore admin-deletable only).
+alter table public.task_attachments
+  add column if not exists uploader_id uuid default auth.uid();
+
 -- Policies for Authenticated users
 create policy "Allow authenticated read on profiles" on public.profiles for select using (auth.role() = 'authenticated');
 create policy "Allow profile self update" on public.profiles for update using (auth.uid() = id) with check (auth.uid() = id);
@@ -269,21 +296,78 @@ create policy "Allow admin update on profiles" on public.profiles for update usi
 create policy "Allow authenticated read on workspaces" on public.workspaces for select using (auth.role() = 'authenticated');
 create policy "Allow admin modify on workspaces" on public.workspaces for all using (public.is_admin());
 
--- Boards, Columns, Tasks, Comments, Attachments
-create policy "Allow authenticated all on boards" on public.boards for all using (auth.role() = 'authenticated');
-create policy "Allow authenticated all on columns" on public.columns for all using (auth.role() = 'authenticated');
-create policy "Allow authenticated all on tasks" on public.tasks for all using (auth.role() = 'authenticated');
-create policy "Allow authenticated all on task_comments" on public.task_comments for all using (auth.role() = 'authenticated');
-create policy "Allow authenticated all on task_attachments" on public.task_attachments for all using (auth.role() = 'authenticated');
+-- ------------------------------------------------------------------------------
+-- BOARDS & COLUMNS
+-- Every member collaborates (read / create / rename), but DELETE is destructive
+-- and irreversible, so it is restricted to admins.
+-- ------------------------------------------------------------------------------
+create policy "Members read boards" on public.boards
+  for select using (auth.role() = 'authenticated');
+create policy "Members create boards" on public.boards
+  for insert with check (auth.role() = 'authenticated');
+create policy "Members update boards" on public.boards
+  for update using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "Admins delete boards" on public.boards
+  for delete using (public.is_admin());
 
--- Targeted Notification Policies (recipient-scoped)
-create policy "Allow recipient read on notifications" on public.notifications for select using (auth.uid() = recipient_id);
+create policy "Members read columns" on public.columns
+  for select using (auth.role() = 'authenticated');
+create policy "Members create columns" on public.columns
+  for insert with check (auth.role() = 'authenticated');
+create policy "Members update columns" on public.columns
+  for update using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "Admins delete columns" on public.columns
+  for delete using (public.is_admin());
+
+-- ------------------------------------------------------------------------------
+-- TASKS — full CRUD for every member; that is the point of a shared kanban board.
+-- ------------------------------------------------------------------------------
+create policy "Members manage tasks" on public.tasks
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+-- ------------------------------------------------------------------------------
+-- TASK COMMENTS — anyone may read and post, but you may only post AS YOURSELF,
+-- and only edit or delete your own comment (admins may moderate any).
+-- This closes the authorship-forgery hole.
+-- ------------------------------------------------------------------------------
+create policy "Members read comments" on public.task_comments
+  for select using (auth.role() = 'authenticated');
+create policy "Members post own comments" on public.task_comments
+  for insert with check (user_id::text = auth.uid()::text);
+create policy "Authors update own comments" on public.task_comments
+  for update using (user_id::text = auth.uid()::text or public.is_admin());
+create policy "Authors delete own comments" on public.task_comments
+  for delete using (user_id::text = auth.uid()::text or public.is_admin());
+
+-- ------------------------------------------------------------------------------
+-- TASK ATTACHMENTS — anyone may read and upload; only the uploader (or an admin)
+-- may delete. `uploader_id` defaults to the caller so it cannot be spoofed.
+-- ------------------------------------------------------------------------------
+create policy "Members read attachments" on public.task_attachments
+  for select using (auth.role() = 'authenticated');
+create policy "Members add attachments" on public.task_attachments
+  for insert with check (auth.role() = 'authenticated');
+create policy "Uploader deletes attachments" on public.task_attachments
+  for delete using (uploader_id::text = auth.uid()::text or public.is_admin());
+
+-- ------------------------------------------------------------------------------
+-- NOTIFICATIONS (recipient-scoped)
+-- ------------------------------------------------------------------------------
+create policy "Allow recipient read on notifications" on public.notifications for select using (recipient_id::text = auth.uid()::text);
 create policy "Allow authenticated insert notifications" on public.notifications for insert with check (auth.role() = 'authenticated');
-create policy "Allow recipient update notifications" on public.notifications for update using (auth.uid() = recipient_id);
-create policy "Allow recipient delete notifications" on public.notifications for delete using (auth.uid() = recipient_id);
+create policy "Allow recipient update notifications" on public.notifications for update using (recipient_id::text = auth.uid()::text);
+create policy "Allow recipient delete notifications" on public.notifications for delete using (recipient_id::text = auth.uid()::text);
 
--- Activity Logs (readable & insertable by workspace members)
-create policy "Allow authenticated all on activity_logs" on public.activity_logs for all using (auth.role() = 'authenticated');
+-- ------------------------------------------------------------------------------
+-- ACTIVITY LOGS — append-only audit trail. You may only write entries attributed
+-- to yourself, and nobody may rewrite history (admins may prune).
+-- ------------------------------------------------------------------------------
+create policy "Members read activity" on public.activity_logs
+  for select using (auth.role() = 'authenticated');
+create policy "Members append own activity" on public.activity_logs
+  for insert with check (user_id::text = auth.uid()::text);
+create policy "Admins prune activity" on public.activity_logs
+  for delete using (public.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- 13. STORAGE BUCKETS & POLICIES
@@ -300,4 +384,6 @@ drop policy if exists "Owner deletes own objects" on storage.objects;
 create policy "Read attachments" on storage.objects for select using (bucket_id = 'attachments' and auth.role() = 'authenticated');
 create policy "Public read avatars" on storage.objects for select using (bucket_id = 'avatars');
 create policy "Authenticated upload objects" on storage.objects for insert with check (bucket_id in ('attachments', 'avatars') and auth.role() = 'authenticated');
-create policy "Owner deletes own objects" on storage.objects for delete using (bucket_id in ('attachments', 'avatars') and (owner = auth.uid() or public.is_admin()));
+-- `owner` is uuid on current Supabase, but cast both sides so this works
+-- regardless of the storage schema version on the project.
+create policy "Owner deletes own objects" on storage.objects for delete using (bucket_id in ('attachments', 'avatars') and (owner::text = auth.uid()::text or public.is_admin()));

@@ -35,3 +35,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local audit / analysis notes (not part of the app)
+AUDIT-REPORT.md
+WHITE-SCREEN-BUG.md
