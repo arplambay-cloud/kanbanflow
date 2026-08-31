@@ -34,9 +34,12 @@ export const AppContent: React.FC = () => {
     if (
       hash.includes('type=recovery') ||
       hash.includes('type=invite') ||
-      hash.includes('type=signup')
+      hash.includes('type=signup') ||
+      location.pathname === '/set-password'
     ) {
       setIsPasswordRecovery(true);
+      // Clean ugly hash from address bar and show neat /set-password URL
+      window.history.replaceState(null, '', '/set-password');
     }
   }, [location]);
 
@@ -54,13 +57,14 @@ export const AppContent: React.FC = () => {
     );
   }
 
-  // Handle password recovery flow
-  if (isPasswordRecovery) {
+  // Handle password recovery / invitation flow
+  if (isPasswordRecovery || location.pathname === '/set-password') {
     return (
       <ResetPasswordView
         onSuccess={() => {
           setIsPasswordRecovery(false);
-          window.location.hash = '';
+          window.history.replaceState(null, '', '/dashboard');
+          window.location.href = '/dashboard';
         }}
       />
     );
