@@ -38,15 +38,17 @@ export const NotificationsView: React.FC = () => {
 
   const handleNotificationClick = (n: typeof notifications[0]) => {
     markNotificationAsRead(n.id);
+    if (n.boardId) {
+      navigateToBoard(n.boardId);
+    }
     if (n.taskId) {
       const task = tasks.find((t) => t.id === n.taskId);
       if (task) {
+        if (task.boardId && task.boardId !== n.boardId) {
+          navigateToBoard(task.boardId);
+        }
         openTaskModal(task);
-        return;
       }
-    }
-    if (n.boardId) {
-      navigateToBoard(n.boardId);
     }
   };
 

@@ -32,6 +32,7 @@ const BoardDetailContent: React.FC = () => {
     users,
     setIsDragging,
     currentUser,
+    isLoadingRemote,
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,6 +60,17 @@ const BoardDetailContent: React.FC = () => {
   const navigate = useNavigate();
   const effectiveBoardId = paramBoardId || activeBoardId;
   const currentBoard = (boards || []).find((b) => b && b.id === effectiveBoardId);
+
+  if (isLoadingRemote && !currentBoard) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-50 min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-semibold text-slate-500">Syncing board from workspace...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentBoard) {
     return (
