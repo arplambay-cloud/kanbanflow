@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import {
   Menu,
   Bell,
@@ -10,9 +11,10 @@ import {
   Sparkles,
   User as UserIcon,
   Settings,
+  LogOut,
+  ChevronDown,
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
-import { UserButton } from '@clerk/react';
 import { timeAgo } from '../../utils/date';
 
 interface HeaderProps {
@@ -20,6 +22,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
+  const { signOut, user: authUser } = useAuth();
   const {
     workspace,
     activePage,
@@ -36,13 +39,20 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
   } = useApp();
 
   const [isNotifPopoverOpen, setIsNotifPopoverOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close notification popover on outside click
+  const activeUser = authUser || currentUser;
+
+  // Close notification popover & user menu on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setIsNotifPopoverOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -223,28 +233,74 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
           )}
         </div>
 
-        {/* Unified Account & Profile Button */}
-        <div className="flex items-center">
-          <UserButton
-            appearance={{
-              elements: {
-                avatarBox: 'w-8 h-8 rounded-full ring-2 ring-indigo-500/20 hover:ring-indigo-500/50 shadow-sm transition-all',
-              },
-            }}
+        {/* Unified Native Account & Profile Dropdown */}
+        <div className="relative" ref={userMenuRef}>
+          <button
+            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            className="flex items-center gap-2 p-1 pl-1.5 pr-2 rounded-full hover:bg-slate-100 border border-slate-200/80 transition-all focus:outline-none cursor-pointer"
+            title="Account Menu"
           >
-            <UserButton.MenuItems>
-              <UserButton.Action
-                label="My Profile"
-                labelIcon={<UserIcon className="w-4 h-4" />}
-                onClick={() => setActivePage('profile')}
-              />
-              <UserButton.Action
-                label="Workspace Settings"
-                labelIcon={<Settings className="w-4 h-4" />}
-                onClick={() => setActivePage('settings')}
-              />
-            </UserButton.MenuItems>
-          </UserButton>
+            <UserAvatar user={activeUser} size="sm" />
+            <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {isUserMenuOpen && (
+            <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-floating border border-slate-200 p-2 z-50 animate-fade-in">
+              <div className="p-2.5 border-b border-slate-100 mb-1">
+                <div className="flex items-center gap-2.5">
+                  <UserAvatar user={activeUser} size="md" />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-bold text-slate-900 truncate">
+                      {activeUser.name}
+                    </span>
+                    <span className="text-[11px] text-slate-500 truncate">
+                      {activeUser.email}
+                    </span>
+                    <span className="inline-block mt-1 w-fit px-1.5 py-0.2 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700">
+                      {activeUser.role}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-0.5">
+                <button
+                  onClick={() => {
+                    setActivePage('profile');
+                    setIsUserMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
+                >
+                  <UserIcon className="w-4 h-4 text-slate-400" />
+                  <span>My Profile</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActivePage('settings');
+                    setIsUserMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Settings className="w-4 h-4 text-slate-400" />
+                  <span>Workspace Settings</span>
+                </button>
+
+                <div className="pt-1 mt-1 border-t border-slate-100">
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      signOut();
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4 text-rose-500" />
+                    <span>Log Out</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>

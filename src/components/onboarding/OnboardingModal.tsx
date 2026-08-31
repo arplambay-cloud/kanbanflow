@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
-import { useOrganization, useOrganizationList } from '@clerk/react';
 import {
   Building,
   Users,
@@ -26,8 +25,6 @@ interface MemberInvite {
 export const OnboardingModal: React.FC = () => {
   const { workspace, updateWorkspace, addUser, createBoard, boards } = useApp();
   const { user: authUser, inviteMember } = useAuth();
-  const { organization } = useOrganization();
-  const { createOrganization, setActive } = useOrganizationList();
 
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -90,21 +87,7 @@ export const OnboardingModal: React.FC = () => {
       accentColor,
     });
 
-    // 2. Create Clerk Organization if available
-    let activeOrg = organization;
-    if (createOrganization && !activeOrg) {
-      try {
-        const newOrg = await createOrganization({ name: workspaceName.trim() || 'My Workspace' });
-        if (setActive && newOrg) {
-          await setActive({ organization: newOrg.id });
-        }
-        activeOrg = newOrg;
-      } catch (err) {
-        console.log('Clerk createOrganization info:', err);
-      }
-    }
-
-    // 3. Send Invites if not skipped
+    // 2. Send Invites if not skipped
     if (!skipInvites) {
       setIsSendingInvites(true);
       const validInvites = invites.filter((inv) => inv.email.trim() && inv.email.includes('@'));
@@ -121,16 +104,8 @@ export const OnboardingModal: React.FC = () => {
           avatar: `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 1000000)}?w=150&auto=format&fit=crop&q=80`,
         });
 
-        // Trigger Clerk Organization invitation & password setup email
         try {
-          if (activeOrg) {
-            await activeOrg.inviteMember({
-              emailAddress: email,
-              role: inv.role === 'admin' ? 'org:admin' : 'org:member',
-            });
-          } else {
-            await inviteMember(email, name, inv.role, 'Team Member');
-          }
+          await inviteMember(email, name, inv.role, 'Team Member');
         } catch (e) {
           console.error('Error inviting member', e);
         }
@@ -138,7 +113,7 @@ export const OnboardingModal: React.FC = () => {
       setIsSendingInvites(false);
     }
 
-    // 4. Ensure starter board
+    // 3. Ensure starter board
     if (boards.length === 0) {
       createBoard(boardTitle.trim() || 'Main Project Board', boardDesc.trim(), accentColor);
     }

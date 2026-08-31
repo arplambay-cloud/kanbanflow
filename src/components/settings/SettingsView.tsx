@@ -21,12 +21,9 @@ import { UserAvatar } from '../common/UserAvatar';
 import { CustomDropdown } from '../common/CustomDropdown';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
-import { useClerk, useOrganization } from '@clerk/react';
 import { User } from '../../types';
 
 export const SettingsView: React.FC = () => {
-  const clerk = useClerk();
-  const { organization } = useOrganization();
   const { inviteMember } = useAuth();
   const {
     workspace,
@@ -233,21 +230,6 @@ export const SettingsView: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                if (organization) {
-                  clerk.openOrganizationProfile();
-                } else {
-                  clerk.openCreateOrganization();
-                }
-              }}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 rounded-lg text-xs font-semibold transition-all cursor-pointer shadow-xs"
-            >
-              <Mail className="w-3.5 h-3.5 text-indigo-600" />
-              <span>Email Invites (Clerk)</span>
-            </button>
-
             <button
               onClick={() => setIsAddingMember(!isAddingMember)}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all cursor-pointer"

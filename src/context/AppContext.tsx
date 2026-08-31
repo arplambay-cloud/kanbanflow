@@ -181,7 +181,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     task: null,
   });
 
-  // Sync authenticated Clerk user into workspace users list
+  // Sync authenticated user into workspace users list
   useEffect(() => {
     if (authUser) {
       setUsers((prev) => {
@@ -204,7 +204,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     jobTitle: authUser?.jobTitle || 'Team Lead',
   };
 
-  // Current active user object: merges Clerk auth with local profile updates
+  // Current active user object: merges auth session with local profile updates
   const currentUser = useMemo<User>(() => {
     const fromUsers = users.find((u) => u.id === currentUserId || (authUser?.id && u.id === authUser.id));
     if (fromUsers) {

@@ -19,13 +19,12 @@ import {
   Trash2,
   Image as ImageIcon,
 } from 'lucide-react';
-import { useUser } from '@clerk/react';
+import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { UserAvatar } from '../common/UserAvatar';
 import { PriorityBadge } from '../common/PriorityBadge';
 import { formatDate, isOverdue } from '../../utils/date';
 
 export const ProfileView: React.FC = () => {
-  const { user: clerkUser } = useUser();
   const {
     currentUser,
     updateUser,
@@ -89,12 +88,14 @@ export const ProfileView: React.FC = () => {
         setAvatar(dataUrl);
         updateUser(currentUser.id, { avatar: dataUrl });
 
-        // Also sync profile image to Clerk in the background if logged into Clerk
-        if (clerkUser) {
+        if (isSupabaseConfigured && supabase) {
           try {
-            await clerkUser.setProfileImage({ file });
+            await supabase
+              .from('profiles')
+              .update({ avatar_url: dataUrl, updated_at: new Date().toISOString() })
+              .eq('id', currentUser.id);
           } catch (err) {
-            console.log('Clerk setProfileImage background update:', err);
+            console.warn('Supabase profile avatar update:', err);
           }
         }
       }
@@ -118,17 +119,20 @@ export const ProfileView: React.FC = () => {
       avatar: trimmedAvatar || undefined,
     });
 
-    if (clerkUser) {
+    if (isSupabaseConfigured && supabase) {
       try {
-        const nameParts = trimmedName.split(' ');
-        const firstName = nameParts[0];
-        const lastName = nameParts.slice(1).join(' ') || '';
-        await clerkUser.update({
-          firstName,
-          lastName: lastName || undefined,
-        });
+        await supabase
+          .from('profiles')
+          .update({
+            full_name: trimmedName,
+            email: trimmedEmail,
+            job_title: trimmedTitle || undefined,
+            avatar_url: trimmedAvatar || undefined,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', currentUser.id);
       } catch (err) {
-        console.log('Clerk user profile background update:', err);
+        console.warn('Supabase user profile update:', err);
       }
     }
 
