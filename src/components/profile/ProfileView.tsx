@@ -24,6 +24,7 @@ import { UserAvatar } from '../common/UserAvatar';
 import { PriorityBadge } from '../common/PriorityBadge';
 import { formatDate, isOverdue } from '../../utils/date';
 import { notifyError } from '../../utils/toast';
+import { persistableAvatar } from '../../utils/avatar';
 
 export const ProfileView: React.FC = () => {
   const {
@@ -159,7 +160,7 @@ export const ProfileView: React.FC = () => {
             full_name: trimmedName,
             email: trimmedEmail,
             job_title: trimmedTitle || undefined,
-            avatar_url: trimmedAvatar || undefined,
+            avatar_url: persistableAvatar(trimmedAvatar),
             updated_at: new Date().toISOString(),
           })
           .eq('id', currentUser.id);

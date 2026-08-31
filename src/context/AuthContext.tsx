@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { User } from '../types';
+import { persistableAvatar } from '../utils/avatar';
 
 interface AuthContextType {
   user: User | null;
@@ -130,7 +131,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             id: supabaseUser.id,
             full_name: fallbackName,
             email,
-            avatar_url: fallbackAvatar,
+            avatar_url: persistableAvatar(fallbackAvatar),
             role: resolvedRole,
             job_title: resolvedJobTitle,
             updated_at: new Date().toISOString(),
