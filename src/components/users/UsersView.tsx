@@ -247,6 +247,19 @@ export const UsersView: React.FC = () => {
     e.preventDefault();
     if (!editingUser || !editName.trim() || !editEmail.trim()) return;
 
+    // Synchronize role and profile to Supabase via admin endpoint
+    const { error: profileErr } = await updateMemberProfile(editingUser.id, {
+      role: editRole,
+      full_name: editName.trim(),
+      job_title: editTitle.trim(),
+      avatar_url: editAvatar.trim(),
+    });
+
+    if (profileErr) {
+      notifyError('Failed to update member role in Supabase: ' + (profileErr.message || 'Unknown error'));
+      return;
+    }
+
     updateUser(editingUser.id, {
       name: editName.trim(),
       email: editEmail.trim(),
@@ -255,16 +268,8 @@ export const UsersView: React.FC = () => {
       avatar: editAvatar.trim() || undefined,
     });
 
-    // Synchronize role and profile to Supabase
-    await updateMemberProfile(editingUser.id, {
-      role: editRole,
-      full_name: editName.trim(),
-      job_title: editTitle.trim(),
-      avatar_url: editAvatar.trim(),
-    });
-
     setEditingUser(null);
-    showToast(`Updated details & synced role to Supabase for ${editName.trim()}.`);
+    showToast(`Updated details & set role to ${editRole.toUpperCase()} in Supabase for ${editName.trim()}.`);
   };
 
   const handleDeleteUser = (user: User) => {
