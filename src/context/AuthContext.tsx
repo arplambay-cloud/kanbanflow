@@ -64,7 +64,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
 
     const email = (supabaseUser.email || '').toLowerCase().trim();
-    const metaFullName = supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.name;
+    const metaFullName =
+      supabaseUser.user_metadata?.display_name ||
+      supabaseUser.user_metadata?.full_name ||
+      supabaseUser.user_metadata?.name;
     const fallbackName = metaFullName || (email ? email.split('@')[0] : 'User');
     const fallbackAvatar = supabaseUser.user_metadata?.avatar_url || '';
     let resolvedRole: 'admin' | 'member' = (supabaseUser.user_metadata?.role as any) || 'member';
@@ -80,9 +83,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           .maybeSingle();
 
         if (profile) {
+          const resolvedName = profile.full_name || fallbackName;
           const loadedUser: User = {
             id: supabaseUser.id,
-            name: profile.full_name || fallbackName,
+            name: resolvedName,
             email: profile.email || email,
             avatar: profile.avatar_url || fallbackAvatar,
             role: (profile.role as 'admin' | 'member') || resolvedRole,
@@ -90,6 +94,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           };
           setUser(loadedUser);
           localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(loadedUser));
+
+          // Auto-sync display_name to Supabase Auth metadata if missing
+          if (!supabaseUser.user_metadata?.display_name || !supabaseUser.user_metadata?.full_name) {
+            try {
+              await supabase.auth.updateUser({
+                data: {
+                  display_name: resolvedName,
+                  full_name: resolvedName,
+                  name: resolvedName,
+                },
+              });
+            } catch (e) {
+              // ignore
+            }
+          }
           return;
         } else {
           // If first user in system, automatically promote to Admin
@@ -116,6 +135,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             job_title: resolvedJobTitle,
             updated_at: new Date().toISOString(),
           });
+
+          // Sync display_name to Auth metadata
+          try {
+            await supabase.auth.updateUser({
+              data: {
+                display_name: fallbackName,
+                full_name: fallbackName,
+                name: fallbackName,
+                role: resolvedRole,
+                job_title: resolvedJobTitle,
+              },
+            });
+          } catch (e) {
+            // ignore
+          }
         }
       } catch (err) {
         console.warn('Error fetching Supabase profile:', err);
@@ -230,7 +264,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         password,
         options: {
           data: {
+            display_name: trimmedName,
             full_name: trimmedName,
+            name: trimmedName,
             job_title: jobTitle,
             role: 'member',
           },
@@ -303,7 +339,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         password_updated_at: new Date().toISOString(),
       };
       if (cleanName) {
+        metaUpdates.display_name = cleanName;
         metaUpdates.full_name = cleanName;
+        metaUpdates.name = cleanName;
       }
 
       const { data, error } = await supabase.auth.updateUser({

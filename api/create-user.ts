@@ -35,14 +35,16 @@ export default async function handler(req: any, res: any) {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // 1. Create user in Supabase Auth directly with password
+    // 1. Create user in Supabase Auth directly with password and metadata
     const { data: authData, error: authError } =
       await supabaseAdmin.auth.admin.createUser({
         email: cleanEmail,
         password: cleanPassword,
         email_confirm: true,
         user_metadata: {
+          display_name: cleanName,
           full_name: cleanName,
+          name: cleanName,
           role: cleanRole,
           job_title: cleanTitle,
           has_set_password: true,
@@ -71,7 +73,7 @@ export default async function handler(req: any, res: any) {
       success: true,
       message: 'User successfully created in Supabase.',
       user: {
-        id: createdUser?.id || user-,
+        id: createdUser?.id || `user-${Date.now()}`,
         name: cleanName,
         email: cleanEmail,
         role: cleanRole,
