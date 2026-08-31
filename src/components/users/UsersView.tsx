@@ -20,6 +20,8 @@ import {
   Layers,
   Sparkles,
   Eye,
+  EyeOff,
+  Loader2,
   Calendar,
   ArrowUpRight,
   KeyRound,
@@ -32,7 +34,7 @@ import { ConfirmDialog } from '../common/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
 
 export const UsersView: React.FC = () => {
-  const { inviteMember } = useAuth();
+  const { inviteMember, createMemberWithPassword, updateMemberProfile } = useAuth();
   const {
     users,
     currentUser,
@@ -59,9 +61,12 @@ export const UsersView: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newRole, setNewRole] = useState<'admin' | 'member'>('member');
   const [newAvatar, setNewAvatar] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
   const addFileInputRef = useRef<HTMLInputElement>(null);
 
   // Edit User Modal state
@@ -136,31 +141,79 @@ export const UsersView: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
+    let pass = '';
+    for (let i = 0; i < 10; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewPassword(pass);
+    setShowPassword(true);
+  };
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim() || !newEmail.trim()) return;
 
     const trimmedEmail = newEmail.trim().toLowerCase();
     const trimmedName = newName.trim();
-    const trimmedTitle = newTitle.trim() || 'Team Member';
+    const trimmedTitle = newTitle.trim() || (newRole === 'admin' ? 'Workspace Admin' : 'Team Member');
+    const trimmedPassword = newPassword.trim();
+    const avatarUrl = newAvatar.trim() || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`;
 
-    addUser({
-      name: trimmedName,
-      email: trimmedEmail,
-      jobTitle: trimmedTitle,
-      role: newRole,
-      avatar: newAvatar.trim() || `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 1000000)}?w=150&auto=format&fit=crop&q=80`,
-    });
+    setIsCreating(true);
 
-    // Send invitation / password link via SMTP
-    await inviteMember(trimmedEmail, trimmedName, newRole, trimmedTitle);
+    try {
+      if (trimmedPassword) {
+        // Direct creation in Supabase with Password
+        const { error, user: createdUser } = await createMemberWithPassword(
+          trimmedEmail,
+          trimmedPassword,
+          trimmedName,
+          newRole,
+          trimmedTitle
+        );
 
-    setNewName('');
-    setNewEmail('');
-    setNewTitle('');
-    setNewAvatar('');
-    setIsAddModalOpen(false);
-    showToast(`Added ${trimmedName} & sent account setup link to ${trimmedEmail}`);
+        if (error) {
+          showToast(`Error: ${error.message || 'Could not create user in Supabase'}`);
+          setIsCreating(false);
+          return;
+        }
+
+        addUser({
+          name: trimmedName,
+          email: trimmedEmail,
+          jobTitle: trimmedTitle,
+          role: newRole,
+          avatar: avatarUrl,
+        });
+
+        showToast(`User ${trimmedName} created in Supabase with password!`);
+      } else {
+        // Send email invitation link
+        addUser({
+          name: trimmedName,
+          email: trimmedEmail,
+          jobTitle: trimmedTitle,
+          role: newRole,
+          avatar: avatarUrl,
+        });
+
+        await inviteMember(trimmedEmail, trimmedName, newRole, trimmedTitle);
+        showToast(`Added ${trimmedName} & sent invitation email to ${trimmedEmail}`);
+      }
+
+      setNewName('');
+      setNewEmail('');
+      setNewTitle('');
+      setNewAvatar('');
+      setNewPassword('');
+      setIsAddModalOpen(false);
+    } catch (err: any) {
+      showToast(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const startEditUser = (user: User) => {
@@ -172,7 +225,7 @@ export const UsersView: React.FC = () => {
     setEditAvatar(user.avatar || '');
   };
 
-  const handleSaveEdit = (e: React.FormEvent) => {
+  const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser || !editName.trim() || !editEmail.trim()) return;
 
@@ -184,8 +237,16 @@ export const UsersView: React.FC = () => {
       avatar: editAvatar.trim() || undefined,
     });
 
+    // Synchronize role and profile to Supabase
+    await updateMemberProfile(editingUser.id, {
+      role: editRole,
+      full_name: editName.trim(),
+      job_title: editTitle.trim(),
+      avatar_url: editAvatar.trim(),
+    });
+
     setEditingUser(null);
-    showToast(`Updated details for ${editName.trim()}.`);
+    showToast(`Updated details & synced role to Supabase for ${editName.trim()}.`);
   };
 
   const handleDeleteUser = (user: User) => {
@@ -501,26 +562,77 @@ export const UsersView: React.FC = () => {
                   value={newRole}
                   onChange={(val) => setNewRole(val as any)}
                   options={[
-                    { value: 'member', label: 'Member' },
-                    { value: 'admin', label: 'Admin' },
+                    { value: 'member', label: 'Member (Standard Access)' },
+                    { value: 'admin', label: 'Admin (Full Workspace Control)' },
                   ]}
                   className="w-full"
                 />
               </div>
 
+              {/* Password Setup */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Password (Direct Supabase Access)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={generatePassword}
+                    className="text-[11px] text-indigo-600 hover:text-indigo-700 font-bold hover:underline cursor-pointer"
+                  >
+                    ⚡ Auto-Generate
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter password (or leave empty to send email invite)"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full pl-3 pr-9 py-2 rounded-lg border border-slate-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="p-1.5 text-slate-400 hover:text-slate-600 absolute right-1.5 top-1/2 -translate-y-1/2 cursor-pointer"
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-3.5 h-3.5" />
+                    ) : (
+                      <Eye className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  {newPassword
+                    ? '✓ Will be created directly in Supabase. User can log in immediately at /access.'
+                    : 'If left empty, an email invite link will be sent to the user.'}
+                </p>
+              </div>
+
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
+                  disabled={isCreating}
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all"
+                  disabled={isCreating}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-semibold rounded-lg shadow-sm transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
                 >
-                  Create User
+                  {isCreating ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Creating in Supabase...</span>
+                    </>
+                  ) : (
+                    <span>Create Member</span>
+                  )}
                 </button>
               </div>
             </form>

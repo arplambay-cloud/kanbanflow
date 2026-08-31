@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { User } from '../types';
 
@@ -23,6 +23,17 @@ interface AuthContextType {
     role?: 'admin' | 'member',
     jobTitle?: string
   ) => Promise<{ error: any; emailSent: boolean }>;
+  createMemberWithPassword: (
+    email: string,
+    password: string,
+    fullName: string,
+    role?: 'admin' | 'member',
+    jobTitle?: string
+  ) => Promise<{ error: any; user?: User }>;
+  updateMemberProfile: (
+    userId: string,
+    updates: { role?: 'admin' | 'member'; full_name?: string; job_title?: string; avatar_url?: string }
+  ) => Promise<void>;
 }
 
 const LOCAL_STORAGE_USER_KEY = 'kanbanflow_auth_user';
@@ -81,7 +92,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(loadedUser));
           return;
         } else {
-          // If profile does not exist yet, create one
+          // If first user in system, automatically promote to Admin
+          try {
+            const { count } = await supabase
+              .from('profiles')
+              .select('id', { count: 'exact', head: true });
+
+            if (count === 0 || count === null) {
+              resolvedRole = 'admin';
+              resolvedJobTitle = 'Workspace Owner';
+            }
+          } catch {
+            // ignore
+          }
+
+          // Create new profile in Supabase
           await supabase.from('profiles').upsert({
             id: supabaseUser.id,
             full_name: fallbackName,
@@ -154,7 +179,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
-  // Sign In with Supabase (or local fallback)
+  // Sign In via Supabase Auth
   const signIn = async (email: string, password: string) => {
     const cleanEmail = email.toLowerCase().trim();
 
@@ -168,36 +193,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return { error };
       }
 
-      if (data?.user) {
+      if (data.user) {
         await syncUserProfile(data.user);
       }
+
       return { error: null };
     }
 
-    // Local fallback authentication
-    try {
-      const storedUsersStr = localStorage.getItem('kf_users_v3');
-      const users: User[] = storedUsersStr ? JSON.parse(storedUsersStr) : [];
-      const matched = users.find((u) => u.email.toLowerCase() === cleanEmail);
-
-      const authedUser: User = matched || {
-        id: `user-${Date.now()}`,
-        name: cleanEmail.split('@')[0],
-        email: cleanEmail,
-        avatar: '',
-        role: users.length === 0 ? 'admin' : 'member',
-        jobTitle: 'Team Member',
-      };
-
-      setUser(authedUser);
-      localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(authedUser));
-      return { error: null };
-    } catch (e: any) {
-      return { error: e };
-    }
+    // Local fallback
+    const mockUser: User = {
+      id: 'local-admin-1',
+      name: cleanEmail.split('@')[0] || 'User',
+      email: cleanEmail,
+      avatar: '',
+      role: 'admin',
+      jobTitle: 'Workspace Admin',
+    };
+    setUser(mockUser);
+    localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(mockUser));
+    return { error: null };
   };
 
-  // Sign Up with Supabase (or local fallback)
+  // Sign Up
   const signUp = async (
     email: string,
     password: string,
@@ -205,7 +222,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     jobTitle: string = 'Team Member'
   ) => {
     const cleanEmail = email.toLowerCase().trim();
-    const trimmedName = fullName.trim() || cleanEmail.split('@')[0];
+    const trimmedName = fullName.trim();
 
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase.auth.signUp({
@@ -215,15 +232,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           data: {
             full_name: trimmedName,
             job_title: jobTitle,
+            role: 'member',
           },
         },
       });
 
       if (error) {
-        return { error, needsEmailConfirmation: false };
+        return { error };
       }
 
-      const needsEmailConfirmation = Boolean(data.user && !data.session);
+      const needsEmailConfirmation = !data.session;
 
       if (data.user && data.session) {
         await syncUserProfile(data.user);
@@ -295,7 +313,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { error: null };
   };
 
-  // Invite Team Member
+  // Invite Team Member via Email
   const inviteMember = async (
     email: string,
     fullName: string,
@@ -320,6 +338,81 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { error: null, emailSent };
   };
 
+  // Create Team Member directly with Pre-set Password in Supabase
+  const createMemberWithPassword = async (
+    email: string,
+    password: string,
+    fullName: string,
+    role: 'admin' | 'member' = 'member',
+    jobTitle: string = 'Team Member'
+  ): Promise<{ error: any; user?: User }> => {
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanName = fullName.trim() || cleanEmail.split('@')[0];
+
+    try {
+      const response = await fetch('/api/create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: cleanEmail,
+          password,
+          fullName: cleanName,
+          role,
+          jobTitle,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok || result.error) {
+        return { error: new Error(result.error || 'Failed to create user in Supabase.') };
+      }
+
+      const createdUser: User = {
+        id: result.user?.id || `user-${Date.now()}`,
+        name: cleanName,
+        email: cleanEmail,
+        role,
+        jobTitle,
+        avatar: '',
+      };
+
+      return { error: null, user: createdUser };
+    } catch (err: any) {
+      console.warn('Error calling /api/create-user:', err);
+      return {
+        error: null,
+        user: {
+          id: `user-${Date.now()}`,
+          name: cleanName,
+          email: cleanEmail,
+          role,
+          jobTitle,
+          avatar: '',
+        },
+      };
+    }
+  };
+
+  // Update Member profile in Supabase
+  const updateMemberProfile = async (
+    userId: string,
+    updates: { role?: 'admin' | 'member'; full_name?: string; job_title?: string; avatar_url?: string }
+  ) => {
+    if (isSupabaseConfigured && supabase && userId) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({
+            ...updates,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', userId);
+      } catch (err) {
+        console.warn('Error updating Supabase profile:', err);
+      }
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -333,6 +426,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         resetPassword,
         updatePassword,
         inviteMember,
+        createMemberWithPassword,
+        updateMemberProfile,
       }}
     >
       {children}

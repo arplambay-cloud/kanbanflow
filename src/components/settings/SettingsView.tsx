@@ -16,6 +16,9 @@ import {
   Briefcase,
   X,
   KeyRound,
+  Eye,
+  EyeOff,
+  Loader2,
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
 import { CustomDropdown } from '../common/CustomDropdown';
@@ -24,7 +27,7 @@ import { useAuth } from '../../context/AuthContext';
 import { User } from '../../types';
 
 export const SettingsView: React.FC = () => {
-  const { inviteMember } = useAuth();
+  const { inviteMember, createMemberWithPassword, updateMemberProfile } = useAuth();
   const {
     workspace,
     updateWorkspace,
@@ -52,8 +55,11 @@ export const SettingsView: React.FC = () => {
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberEmail, setNewMemberEmail] = useState('');
+  const [newMemberPassword, setNewMemberPassword] = useState('');
+  const [showMemberPassword, setShowMemberPassword] = useState(false);
   const [newMemberTitle, setNewMemberTitle] = useState('');
   const [newMemberRole, setNewMemberRole] = useState<'admin' | 'member'>('member');
+  const [isCreatingMember, setIsCreatingMember] = useState(false);
 
   // Edit existing member modal state
   const [editingMember, setEditingMember] = useState<User | null>(null);
@@ -75,29 +81,75 @@ export const SettingsView: React.FC = () => {
     setTimeout(() => setSavedSuccess(false), 3000);
   };
 
+  const generateMemberPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
+    let pass = '';
+    for (let i = 0; i < 10; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewMemberPassword(pass);
+    setShowMemberPassword(true);
+  };
+
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMemberName.trim() || !newMemberEmail.trim()) return;
 
     const trimmedEmail = newMemberEmail.trim().toLowerCase();
     const trimmedName = newMemberName.trim();
-    const trimmedTitle = newMemberTitle.trim() || 'Team Member';
+    const trimmedTitle = newMemberTitle.trim() || (newMemberRole === 'admin' ? 'Workspace Admin' : 'Team Member');
+    const trimmedPassword = newMemberPassword.trim();
+    const avatarUrl = `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`;
 
-    addUser({
-      name: trimmedName,
-      email: trimmedEmail,
-      jobTitle: trimmedTitle,
-      role: newMemberRole,
-      avatar: `https://images.unsplash.com/photo-${1500000000000 + Math.floor(Math.random() * 1000000)}?w=150&auto=format&fit=crop&q=80`,
-    });
+    setIsCreatingMember(true);
 
-    // Send invitation / password link via SMTP
-    await inviteMember(trimmedEmail, trimmedName, newMemberRole, trimmedTitle);
+    try {
+      if (trimmedPassword) {
+        // Direct creation in Supabase with pre-set password
+        const { error, user: createdUser } = await createMemberWithPassword(
+          trimmedEmail,
+          trimmedPassword,
+          trimmedName,
+          newMemberRole,
+          trimmedTitle
+        );
 
-    setNewMemberName('');
-    setNewMemberEmail('');
-    setNewMemberTitle('');
-    setIsAddingMember(false);
+        if (error) {
+          alert(`Failed to create user in Supabase: ${error.message}`);
+          setIsCreatingMember(false);
+          return;
+        }
+
+        addUser({
+          name: trimmedName,
+          email: trimmedEmail,
+          jobTitle: trimmedTitle,
+          role: newMemberRole,
+          avatar: avatarUrl,
+        });
+      } else {
+        addUser({
+          name: trimmedName,
+          email: trimmedEmail,
+          jobTitle: trimmedTitle,
+          role: newMemberRole,
+          avatar: avatarUrl,
+        });
+
+        // Send invitation / password link via email
+        await inviteMember(trimmedEmail, trimmedName, newMemberRole, trimmedTitle);
+      }
+
+      setNewMemberName('');
+      setNewMemberEmail('');
+      setNewMemberTitle('');
+      setNewMemberPassword('');
+      setIsAddingMember(false);
+    } catch (err: any) {
+      alert(err.message || 'Error adding team member.');
+    } finally {
+      setIsCreatingMember(false);
+    }
   };
 
   const startEditMember = (member: User) => {
@@ -108,7 +160,7 @@ export const SettingsView: React.FC = () => {
     setEditRole((member.role as 'admin' | 'member') || 'member');
   };
 
-  const handleSaveMemberEdit = (e: React.FormEvent) => {
+  const handleSaveMemberEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingMember || !editName.trim() || !editEmail.trim()) return;
 
@@ -117,6 +169,13 @@ export const SettingsView: React.FC = () => {
       email: editEmail.trim(),
       jobTitle: editTitle.trim() || undefined,
       role: editRole,
+    });
+
+    // Synchronize to Supabase profiles table
+    await updateMemberProfile(editingMember.id, {
+      role: editRole,
+      full_name: editName.trim(),
+      job_title: editTitle.trim(),
     });
 
     setEditingMember(null);
@@ -278,25 +337,77 @@ export const SettingsView: React.FC = () => {
                 value={newMemberRole}
                 onChange={(val) => setNewMemberRole(val as any)}
                 options={[
-                  { value: 'member', label: 'Member' },
-                  { value: 'admin', label: 'Admin' },
+                  { value: 'member', label: 'Member (Standard)' },
+                  { value: 'admin', label: 'Admin (Full Access)' },
                 ]}
                 className="w-full"
               />
             </div>
-            <div className="flex justify-end gap-2">
+
+            {/* Password Row */}
+            <div className="pt-1">
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Password (Direct Supabase Access)
+                </label>
+                <button
+                  type="button"
+                  onClick={generateMemberPassword}
+                  className="text-[11px] text-indigo-600 hover:text-indigo-700 font-bold hover:underline cursor-pointer"
+                >
+                  ⚡ Auto-Generate
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  type={showMemberPassword ? 'text' : 'password'}
+                  placeholder="Set password for instant login (or leave empty for email invite)"
+                  value={newMemberPassword}
+                  onChange={(e) => setNewMemberPassword(e.target.value)}
+                  className="w-full pl-3 pr-9 py-2 rounded-lg border border-slate-200 text-xs bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 font-medium transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowMemberPassword(!showMemberPassword)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 absolute right-1.5 top-1/2 -translate-y-1/2 cursor-pointer"
+                  title={showMemberPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showMemberPassword ? (
+                    <EyeOff className="w-3.5 h-3.5" />
+                  ) : (
+                    <Eye className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">
+                {newMemberPassword
+                  ? '✓ User will be created directly in Supabase. They can immediately log in at /access.'
+                  : 'If left empty, a secure invitation link will be sent via email.'}
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200/80">
               <button
                 type="button"
+                disabled={isCreatingMember}
                 onClick={() => setIsAddingMember(false)}
-                className="px-3.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+                className="px-3.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all"
+                disabled={isCreatingMember}
+                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs font-semibold rounded-lg shadow-sm transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
               >
-                Add Member
+                {isCreatingMember ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Creating in Supabase...</span>
+                  </>
+                ) : (
+                  <span>Add Member</span>
+                )}
               </button>
             </div>
           </form>
