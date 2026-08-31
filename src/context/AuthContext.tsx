@@ -27,21 +27,24 @@ interface AuthContextType {
 
 const LOCAL_STORAGE_USER_KEY = 'kanbanflow_auth_user';
 
+// Clean legacy Clerk keys from localStorage once on boot
+try {
+  const keysToRemove = Object.keys(localStorage).filter(
+    (key) => key.startsWith('__clerk') || key.startsWith('clerk-')
+  );
+  keysToRemove.forEach((key) => localStorage.removeItem(key));
+} catch {
+  // ignore
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    try {
-      const savedUser = localStorage.getItem(LOCAL_STORAGE_USER_KEY);
-      return savedUser ? JSON.parse(savedUser) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Sync profile details from Supabase or localStorage
+  // Sync profile details from Supabase
   const syncUserProfile = async (supabaseUser: any) => {
     if (!supabaseUser) {
       setUser(null);
@@ -94,7 +97,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     }
 
-    // 2. Local fallback if Supabase table is unreachable or local mode
+    // 2. Fallback
     const loadedUser: User = {
       id: supabaseUser.id,
       name: fallbackName,
@@ -119,14 +122,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (mounted) setLoading(false);
           });
         } else {
-          const stored = localStorage.getItem(LOCAL_STORAGE_USER_KEY);
-          if (stored) {
-            try {
-              setUser(JSON.parse(stored));
-            } catch {
-              setUser(null);
-            }
-          }
+          // No active Supabase session -> clear any old local storage user
+          setUser(null);
+          localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
           setLoading(false);
         }
       });
@@ -150,14 +148,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         authListener?.subscription.unsubscribe();
       };
     } else {
-      const stored = localStorage.getItem(LOCAL_STORAGE_USER_KEY);
-      if (stored) {
-        try {
-          setUser(JSON.parse(stored));
-        } catch {
-          setUser(null);
-        }
-      }
+      setUser(null);
+      localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
       setLoading(false);
     }
   }, []);
@@ -267,6 +259,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
     setSession(null);
     localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
+    localStorage.removeItem('kf_current_user_id_v3');
   };
 
   // Reset Password via Supabase
