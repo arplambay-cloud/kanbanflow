@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { reorderTasks, tasksNeedingPersist } from './taskReorder';
+import { reorderTasks, tasksNeedingPersist, resolveColumnForBoard } from './taskReorder';
 import { Task } from '../types';
 
 const FIXED_NOW = '2026-01-01T00:00:00.000Z';
@@ -157,5 +157,35 @@ describe('tasksNeedingPersist', () => {
   it('returns nothing when the layout is unchanged', () => {
     const after = reorderTasks(before, 'a', 'todo', 0, now);
     expect(tasksNeedingPersist(before, after)).toEqual([]);
+  });
+});
+
+describe('resolveColumnForBoard', () => {
+  const columns = [
+    { id: 'a-todo', boardId: 'A', order: 0 },
+    { id: 'a-done', boardId: 'A', order: 1 },
+    { id: 'b-todo', boardId: 'B', order: 0 },
+    { id: 'b-doing', boardId: 'B', order: 1 },
+  ];
+
+  it('keeps the column when it already belongs to the board', () => {
+    expect(resolveColumnForBoard('B', 'b-doing', columns)).toBe('b-doing');
+  });
+
+  it('falls back to the first column when moving across boards', () => {
+    // the bug: an A column carried over to board B
+    expect(resolveColumnForBoard('B', 'a-todo', columns)).toBe('b-todo');
+  });
+
+  it('respects column order when picking the fallback', () => {
+    const shuffled = [
+      { id: 'b-doing', boardId: 'B', order: 1 },
+      { id: 'b-todo', boardId: 'B', order: 0 },
+    ];
+    expect(resolveColumnForBoard('B', undefined, shuffled)).toBe('b-todo');
+  });
+
+  it('returns null when the target board has no columns', () => {
+    expect(resolveColumnForBoard('C', 'a-todo', columns)).toBeNull();
   });
 });

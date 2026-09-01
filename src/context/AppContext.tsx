@@ -24,7 +24,7 @@ import {
 } from '../data/initialData';
 import { useAuth } from './AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
-import { reorderTasks, tasksNeedingPersist } from '../utils/taskReorder';
+import { reorderTasks, tasksNeedingPersist, resolveColumnForBoard } from '../utils/taskReorder';
 import { notifySyncFailure } from '../utils/toast';
 
 interface TaskModalState {
@@ -899,10 +899,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const existing = tasks.find((t) => t.id === id);
     if (!existing) return;
 
-    const updatedTask: Task = {
+    const merged: Task = {
       ...existing,
       ...updates,
       updatedAt: new Date().toISOString(),
+    };
+
+    // A task must always sit in a column that belongs to its own board.
+    // If a move left them mismatched, land it at the end of the target board's
+    // first column rather than writing a row that renders nowhere.
+    const resolvedColumn = resolveColumnForBoard(merged.boardId, merged.columnId, columns);
+    if (resolvedColumn && resolvedColumn !== merged.columnId) {
+      merged.columnId = resolvedColumn;
+      merged.order = tasks.filter(
+        (t) => t.id !== id && t.columnId === resolvedColumn
+      ).length;
+    }
+
+    const updatedTask: Task = merged;
+    updates = {
+      ...updates,
+      boardId: merged.boardId,
+      columnId: merged.columnId,
+      order: merged.order,
     };
 
     setTasks((prev) => prev.map((t) => (t.id === id ? updatedTask : t)));
@@ -916,6 +935,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           if (updates.description !== undefined) dbUpdates.description = updates.description;
           if (updates.priority !== undefined) dbUpdates.priority = updates.priority;
           if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate || null;
+          // board_id must be written whenever it changes. Without it, moving a
+          // task to another board saved the NEW column_id against the OLD
+          // board_id — so the task rendered on a board whose columns did not
+          // include it, and disappeared from the UI entirely.
+          if (updates.boardId !== undefined) dbUpdates.board_id = updates.boardId;
           if (updates.columnId !== undefined) dbUpdates.column_id = updates.columnId;
           if (updates.order !== undefined) dbUpdates.order = updates.order;
           if (updates.assigneeId !== undefined) {
