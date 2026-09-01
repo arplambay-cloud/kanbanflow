@@ -169,7 +169,9 @@ export const UsersView: React.FC = () => {
     const trimmedName = newName.trim();
     const trimmedTitle = newTitle.trim() || (newRole === 'admin' ? 'Workspace Admin' : 'Team Member');
     const trimmedPassword = newPassword.trim();
-    const avatarUrl = newAvatar.trim() || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`;
+    // No stock-photo fallback: an empty avatar renders initials, and a random
+    // Unsplash URL only ever existed in local state so it vanished on refresh.
+    const avatarUrl = persistableAvatar(newAvatar);
 
     setIsCreating(true);
 
@@ -181,7 +183,8 @@ export const UsersView: React.FC = () => {
           trimmedPassword,
           trimmedName,
           newRole,
-          trimmedTitle
+          trimmedTitle,
+          avatarUrl
         );
 
         if (error) {
@@ -209,7 +212,7 @@ export const UsersView: React.FC = () => {
           avatar: avatarUrl,
         });
 
-        await inviteMember(trimmedEmail, trimmedName, newRole, trimmedTitle);
+        await inviteMember(trimmedEmail, trimmedName, newRole, trimmedTitle, avatarUrl);
         notifySuccess(`Added ${trimmedName} & sent invitation email to ${trimmedEmail}`);
       }
 

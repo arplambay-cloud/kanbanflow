@@ -22,14 +22,16 @@ interface AuthContextType {
     email: string,
     fullName: string,
     role?: 'admin' | 'member',
-    jobTitle?: string
+    jobTitle?: string,
+    avatar?: string
   ) => Promise<{ error: any; emailSent: boolean }>;
   createMemberWithPassword: (
     email: string,
     password: string,
     fullName: string,
     role?: 'admin' | 'member',
-    jobTitle?: string
+    jobTitle?: string,
+    avatar?: string
   ) => Promise<{ error: any; user?: User }>;
   deleteMember: (userId: string) => Promise<{ error?: unknown }>;
   updateMemberProfile: (
@@ -360,7 +362,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     email: string,
     fullName: string,
     role: 'admin' | 'member' = 'member',
-    jobTitle: string = 'Team Member'
+    jobTitle: string = 'Team Member',
+    avatar: string = ''
   ): Promise<{ error: any; emailSent: boolean }> => {
     const cleanEmail = email.toLowerCase().trim();
     const cleanName = fullName.trim() || cleanEmail.split('@')[0];
@@ -383,6 +386,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           fullName: cleanName,
           role,
           jobTitle,
+          avatar,
         }),
       });
 
@@ -403,7 +407,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     password: string,
     fullName: string,
     role: 'admin' | 'member' = 'member',
-    jobTitle: string = 'Team Member'
+    jobTitle: string = 'Team Member',
+    avatar: string = ''
   ): Promise<{ error: any; user?: User }> => {
     const cleanEmail = email.toLowerCase().trim();
     const cleanName = fullName.trim() || cleanEmail.split('@')[0];
@@ -428,6 +433,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           fullName: cleanName,
           role,
           jobTitle,
+          avatar,
         }),
       });
 
