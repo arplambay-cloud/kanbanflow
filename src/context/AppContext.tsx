@@ -25,6 +25,7 @@ import {
 import { useAuth } from './AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { reorderTasks, tasksNeedingPersist } from '../utils/taskReorder';
+import { notifySyncFailure } from '../utils/toast';
 
 interface TaskModalState {
   isOpen: boolean;
@@ -81,7 +82,6 @@ interface AppContextType {
   taskModalState: TaskModalState;
   openTaskModal: (task?: Task, initialBoardId?: string, initialColumnId?: string) => void;
   closeTaskModal: () => void;
-  resetToDefaultData: () => void;
   refreshRemoteData: () => Promise<void>;
   isLoadingRemote: boolean;
   setIsDragging: (isDragging: boolean) => void;
@@ -563,7 +563,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setWorkspace((prev) => ({ ...prev, ...partial }));
     if (isSupabaseConfigured && supabase) {
       try {
-        await supabase
+        const { error: writeError } = await supabase
           .from('workspaces')
           .update({
             name: partial.name !== undefined ? partial.name : workspace.name,
@@ -572,8 +572,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             updated_at: new Date().toISOString(),
           })
           .eq('id', workspace.id || 'ws-default');
+          if (writeError) throw writeError;
       } catch (err) {
         console.warn('Supabase updateWorkspace error:', err);
+        notifySyncFailure("Workspace settings", err);
       }
     }
   };
@@ -599,9 +601,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setUsers((prev) => prev.filter((u) => u.id !== id));
     if (isSupabaseConfigured && supabase) {
       try {
-        await supabase.from('profiles').delete().eq('id', id);
+        const { error: writeError } = await supabase.from('profiles').delete().eq('id', id);
+          if (writeError) throw writeError;
       } catch (err) {
         console.warn('Supabase deleteUser error:', err);
+        notifySyncFailure("Removing the member", err);
       }
     }
   };
@@ -639,13 +643,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const client = supabase;
       (async () => {
         try {
-          await client.from('boards').insert({
+          const { error: boardError } = await client.from('boards').insert({
             id: boardId,
             workspace_id: workspace.id || 'ws-default',
             title,
             description,
             color,
           });
+          if (boardError) throw boardError;
 
           const dbCols = defaultCols.map((c) => ({
             id: c.id,
@@ -653,9 +658,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             title: c.title,
             order: c.order,
           }));
-          await client.from('columns').insert(dbCols);
+          const { error: colError } = await client.from('columns').insert(dbCols);
+          if (colError) throw colError;
         } catch (err) {
           console.warn('Supabase createBoard error:', err);
+          notifySyncFailure("The new board", err);
         }
       })();
     }
@@ -676,7 +683,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const client = supabase;
       (async () => {
         try {
-          await client
+          const { error: writeError } = await client
             .from('boards')
             .update({
               ...(partial.title !== undefined ? { title: partial.title } : {}),
@@ -685,8 +692,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               updated_at: new Date().toISOString(),
             })
             .eq('id', id);
+            if (writeError) throw writeError;
         } catch (err) {
           console.warn('Supabase updateBoard error:', err);
+          notifySyncFailure("Board changes", err);
         }
       })();
     }
@@ -703,9 +712,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const client = supabase;
       (async () => {
         try {
-          await client.from('boards').delete().eq('id', id);
+          const { error: writeError } = await client.from('boards').delete().eq('id', id);
+            if (writeError) throw writeError;
         } catch (err) {
           console.warn('Supabase deleteBoard error:', err);
+          notifySyncFailure("Deleting the board", err);
         }
       })();
     }
@@ -748,14 +759,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const client = supabase;
       (async () => {
         try {
-          await client.from('columns').insert({
+          const { error: writeError } = await client.from('columns').insert({
             id: colId,
             board_id: boardId,
             title,
             order: existingForBoard.length,
           });
+            if (writeError) throw writeError;
         } catch (err) {
           console.warn('Supabase createColumn error:', err);
+          notifySyncFailure("The new column", err);
         }
       })();
     }
@@ -774,9 +787,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const client = supabase;
       (async () => {
         try {
-          await client.from('columns').update({ title }).eq('id', id);
+          const { error: writeError } = await client.from('columns').update({ title }).eq('id', id);
+            if (writeError) throw writeError;
         } catch (err) {
           console.warn('Supabase updateColumn error:', err);
+          notifySyncFailure("Column changes", err);
         }
       })();
     }
@@ -791,9 +806,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const client = supabase;
       (async () => {
         try {
-          await client.from('columns').delete().eq('id', id);
+          const { error: writeError } = await client.from('columns').delete().eq('id', id);
+            if (writeError) throw writeError;
         } catch (err) {
           console.warn('Supabase deleteColumn error:', err);
+          notifySyncFailure("Deleting the column", err);
         }
       })();
     }
@@ -828,7 +845,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const client = supabase;
       (async () => {
         try {
-          await client.from('tasks').insert({
+          const { error: writeError } = await client.from('tasks').insert({
             id: taskId,
             board_id: data.boardId,
             column_id: data.columnId,
@@ -839,8 +856,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             assignee_id: data.assigneeId || null,
             order: tasksInColumn.length,
           });
+            if (writeError) throw writeError;
         } catch (err) {
           console.warn('Supabase createTask error:', err);
+          notifySyncFailure("The new task", err);
         }
       })();
     }
@@ -890,9 +909,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             dbUpdates.assignee_id = updates.assigneeId || null;
           }
 
-          await client.from('tasks').update(dbUpdates).eq('id', id);
+          const { error: writeError } = await client.from('tasks').update(dbUpdates).eq('id', id);
+            if (writeError) throw writeError;
         } catch (err) {
           console.warn('Supabase updateTask error:', err);
+          notifySyncFailure("Task changes", err);
         }
       })();
     }
@@ -922,9 +943,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const client = supabase;
       (async () => {
         try {
-          await client.from('tasks').delete().eq('id', id);
+          const { error: writeError } = await client.from('tasks').delete().eq('id', id);
+            if (writeError) throw writeError;
         } catch (err) {
           console.warn('Supabase deleteTask error:', err);
+          notifySyncFailure("Deleting the task", err);
         }
       })();
     }
@@ -958,7 +981,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           const changedTasks = tasksNeedingPersist(tasks, updatedTasks);
           if (changedTasks.length === 0) return;
 
-          await client.from('tasks').upsert(
+          const { error: writeError } = await client.from('tasks').upsert(
             changedTasks.map((t) => ({
               id: t.id,
               board_id: t.boardId,
@@ -973,8 +996,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             })),
             { onConflict: 'id' }
           );
+            if (writeError) throw writeError;
         } catch (err) {
           console.warn('Supabase moveTask error:', err);
+          notifySyncFailure("Moving the task", err);
         }
       })();
     }
@@ -1015,7 +1040,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const client = supabase;
       (async () => {
         try {
-          await client.from('task_comments').insert({
+          const { error: writeError } = await client.from('task_comments').insert({
             id: commentId,
             task_id: taskId,
             user_id: currentUser.id || authUser?.id,
@@ -1023,8 +1048,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             user_avatar: '', // resolved from profiles on read; never store a copy here
             content,
           });
+            if (writeError) throw writeError;
         } catch (err) {
           console.warn('Supabase addComment error:', err);
+          notifySyncFailure("Your comment", err);
         }
       })();
     }
@@ -1061,9 +1088,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const client = supabase;
       (async () => {
         try {
-          await client.from('task_comments').delete().eq('id', commentId);
+          const { error: writeError } = await client.from('task_comments').delete().eq('id', commentId);
+            if (writeError) throw writeError;
         } catch (err) {
           console.warn('Supabase deleteComment error:', err);
+          notifySyncFailure("Deleting the comment", err);
         }
       })();
     }
@@ -1100,7 +1129,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         try {
           // `uploaded_by` is NOT NULL on the deployed table; omitting it made
           // every attachment insert fail a not-null violation.
-          await client.from('task_attachments').insert({
+          const { error: writeError } = await client.from('task_attachments').insert({
             id: attachmentId,
             task_id: taskId,
             name: fileData.name,
@@ -1109,8 +1138,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             url: fileData.url,
             uploaded_by: currentUser.name || '',
           });
+            if (writeError) throw writeError;
         } catch (err) {
           console.warn('Supabase addAttachment error:', err);
+          notifySyncFailure("The attachment", err);
         }
       })();
     }
@@ -1135,9 +1166,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const client = supabase;
       (async () => {
         try {
-          await client.from('task_attachments').delete().eq('id', attachmentId);
+          const { error: writeError } = await client.from('task_attachments').delete().eq('id', attachmentId);
+            if (writeError) throw writeError;
         } catch (err) {
           console.warn('Supabase deleteAttachment error:', err);
+          notifySyncFailure("Deleting the attachment", err);
         }
       })();
     }
@@ -1177,7 +1210,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const client = supabase;
       (async () => {
         try {
-          await client.from('notifications').insert({
+          const { error: writeError } = await client.from('notifications').insert({
             id: notifId,
             recipient_id: data.recipientId,
             sender_id: currentUser.id || authUser?.id,
@@ -1190,6 +1223,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             board_id: data.boardId || null,
             is_read: false,
           });
+            if (writeError) throw writeError;
         } catch (err) {
           console.warn('Supabase notifyUser error:', err);
         }
@@ -1207,7 +1241,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const client = supabase;
       (async () => {
         try {
-          await client.from('notifications').update({ is_read: true }).eq('id', id);
+          const { error: writeError } = await client.from('notifications').update({ is_read: true }).eq('id', id);
+            if (writeError) throw writeError;
         } catch (err) {
           console.warn('Supabase markRead error:', err);
         }
@@ -1223,7 +1258,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const client = supabase;
       (async () => {
         try {
-          await client.from('notifications').update({ is_read: true }).eq('recipient_id', authUser.id);
+          const { error: writeError } = await client.from('notifications').update({ is_read: true }).eq('recipient_id', authUser.id);
+            if (writeError) throw writeError;
         } catch (err) {
           console.warn('Supabase markAllRead error:', err);
         }
@@ -1239,9 +1275,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const client = supabase;
       (async () => {
         try {
-          await client.from('notifications').delete().eq('recipient_id', authUser.id);
+          const { error: writeError } = await client.from('notifications').delete().eq('recipient_id', authUser.id);
+            if (writeError) throw writeError;
         } catch (err) {
           console.warn('Supabase clearNotifications error:', err);
+          notifySyncFailure("Clearing notifications", err);
         }
       })();
     }
@@ -1276,7 +1314,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const client = supabase;
       (async () => {
         try {
-          await client.from('activity_logs').insert({
+          const { error: writeError } = await client.from('activity_logs').insert({
             id: logId,
             workspace_id: workspace.id || 'ws-default',
             user_id: currentUser.id || authUser?.id,
@@ -1287,6 +1325,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             board_title: boardTitle || '',
             details: details || '',
           });
+            if (writeError) throw writeError;
         } catch (err) {
           console.warn('Supabase logActivity error:', err);
         }
@@ -1343,20 +1382,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setTaskModalState({ isOpen: false, task: null });
   };
 
-  const resetToDefaultData = () => {
-    setWorkspace(initialWorkspace);
-    setBoards(initialBoards);
-    setColumns(initialColumns);
-    setTasks(initialTasks);
-    setNotifications(initialNotifications);
-    setActivityLogs(initialActivityLogs);
-    safeStorageSave(LOCAL_STORAGE_KEYS.WORKSPACE, initialWorkspace);
-    safeStorageSave(LOCAL_STORAGE_KEYS.BOARDS, initialBoards);
-    safeStorageSave(LOCAL_STORAGE_KEYS.COLUMNS, initialColumns);
-    safeStorageSave(LOCAL_STORAGE_KEYS.TASKS, initialTasks);
-    safeStorageSave(LOCAL_STORAGE_KEYS.NOTIFICATIONS, initialNotifications);
-    safeStorageSave(LOCAL_STORAGE_KEYS.ACTIVITY, initialActivityLogs);
-  };
 
   return (
     <AppContext.Provider
@@ -1400,7 +1425,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         taskModalState,
         openTaskModal,
         closeTaskModal,
-        resetToDefaultData,
         refreshRemoteData: fetchRemoteWorkspaceData,
         isLoadingRemote,
         setIsDragging,

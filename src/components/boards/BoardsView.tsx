@@ -109,22 +109,6 @@ const BoardsContent: React.FC = () => {
 
       {/* Boards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {/* Create Board Card */}
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="h-56 rounded-xl border-2 border-dashed border-slate-300 hover:border-indigo-400 bg-slate-50/50 hover:bg-indigo-50/20 p-6 flex flex-col items-center justify-center text-center transition-all group cursor-pointer"
-        >
-          <div className="w-12 h-12 rounded-lg bg-white group-hover:bg-indigo-600 text-slate-400 group-hover:text-white flex items-center justify-center shadow-subtle group-hover:shadow-md transition-all mb-3">
-            <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform duration-200" />
-          </div>
-          <span className="font-semibold text-slate-800 group-hover:text-indigo-600 text-sm">
-            Create New Board
-          </span>
-          <span className="text-xs text-slate-400 mt-1 max-w-[220px]">
-            Comes with To Do, In Progress, and Done columns ready to use
-          </span>
-        </button>
-
         {/* Existing Boards */}
         {(boards || []).map((board) => {
           if (!board || !board.id) return null;
@@ -232,6 +216,23 @@ const BoardsContent: React.FC = () => {
             </div>
           );
         })}
+
+        {/* Create Board Card — last, so it always sits after the existing
+            boards rather than pushing them along. */}
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="h-56 rounded-xl border-2 border-dashed border-slate-300 hover:border-indigo-400 bg-slate-50/50 hover:bg-indigo-50/20 p-6 flex flex-col items-center justify-center text-center transition-all group cursor-pointer"
+        >
+          <div className="w-12 h-12 rounded-lg bg-white group-hover:bg-indigo-600 text-slate-400 group-hover:text-white flex items-center justify-center shadow-subtle group-hover:shadow-md transition-all mb-3">
+            <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform duration-200" />
+          </div>
+          <span className="font-semibold text-slate-800 group-hover:text-indigo-600 text-sm">
+            Create New Board
+          </span>
+          <span className="text-xs text-slate-400 mt-1 max-w-[220px]">
+            Comes with To Do, In Progress, and Done columns ready to use
+          </span>
+        </button>
       </div>
 
       {/* Create Board Modal */}
