@@ -14,7 +14,6 @@ import {
   Shield,
   User as UserIcon,
   X,
-  Check,
   Camera,
   Upload,
   Layers,
@@ -33,7 +32,7 @@ import { PriorityBadge } from '../common/PriorityBadge';
 import { formatDate } from '../../utils/date';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
-import { notifyError } from '../../utils/toast';
+import { notifyError, notifySuccess } from '../../utils/toast';
 import { persistableAvatar } from '../../utils/avatar';
 
 export const UsersView: React.FC = () => {
@@ -80,14 +79,6 @@ export const UsersView: React.FC = () => {
   const [editRole, setEditRole] = useState<'admin' | 'member'>('member');
   const [editAvatar, setEditAvatar] = useState('');
   const editFileInputRef = useRef<HTMLInputElement>(null);
-
-  // Toast / notification state
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
 
   // Keyboard shortcut ⌘K for search
   useEffect(() => {
@@ -194,7 +185,7 @@ export const UsersView: React.FC = () => {
         );
 
         if (error) {
-          showToast(`Error: ${error.message || 'Could not create user in Supabase'}`);
+          notifyError(error.message || 'Could not create user in Supabase.');
           setIsCreating(false);
           return;
         }
@@ -207,7 +198,7 @@ export const UsersView: React.FC = () => {
           avatar: avatarUrl,
         });
 
-        showToast(`User ${trimmedName} created in Supabase with password!`);
+        notifySuccess(`User ${trimmedName} created in Supabase with password!`);
       } else {
         // Send email invitation link
         addUser({
@@ -219,7 +210,7 @@ export const UsersView: React.FC = () => {
         });
 
         await inviteMember(trimmedEmail, trimmedName, newRole, trimmedTitle);
-        showToast(`Added ${trimmedName} & sent invitation email to ${trimmedEmail}`);
+        notifySuccess(`Added ${trimmedName} & sent invitation email to ${trimmedEmail}`);
       }
 
       setNewName('');
@@ -229,7 +220,7 @@ export const UsersView: React.FC = () => {
       setNewPassword('');
       setIsAddModalOpen(false);
     } catch (err: any) {
-      showToast(err.message || 'An unexpected error occurred.');
+      notifyError(err.message || 'An unexpected error occurred.');
     } finally {
       setIsCreating(false);
     }
@@ -270,7 +261,7 @@ export const UsersView: React.FC = () => {
     });
 
     setEditingUser(null);
-    showToast(`Updated details & set role to ${editRole.toUpperCase()} in Supabase for ${editName.trim()}.`);
+    notifySuccess(`Updated details & set role to ${editRole.toUpperCase()} in Supabase for ${editName.trim()}.`);
   };
 
   const handleDeleteUser = (user: User) => {
@@ -321,14 +312,6 @@ export const UsersView: React.FC = () => {
           <span>Add User</span>
         </button>
       </div>
-
-      {/* Toast Notification Banner */}
-      {toastMessage && (
-        <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-xl flex items-center gap-2 animate-fade-in shadow-2xs">
-          <Check className="w-4 h-4 text-emerald-600" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
 
       {/* Filter and Search Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-subtle flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -867,7 +850,7 @@ export const UsersView: React.FC = () => {
                   type="button"
                   onClick={async () => {
                     await inviteMember(viewingUser.email, viewingUser.name, viewingUser.role, viewingUser.jobTitle);
-                    showToast(`Password setup link sent to ${viewingUser.email}`);
+                    notifySuccess(`Password setup link sent to ${viewingUser.email}`);
                   }}
                   className="px-3 py-1.5 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 text-xs font-bold rounded-lg transition-all shadow-xs cursor-pointer"
                 >
@@ -1025,7 +1008,7 @@ export const UsersView: React.FC = () => {
           confirmVariant="danger"
           onConfirm={() => {
             deleteUser(userToDelete.id);
-            showToast(`Removed ${userToDelete.name} from the workspace.`);
+            notifySuccess(`Removed ${userToDelete.name} from the workspace.`);
             setUserToDelete(null);
           }}
           onCancel={() => setUserToDelete(null)}

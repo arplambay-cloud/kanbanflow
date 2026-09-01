@@ -4,7 +4,6 @@ import {
   Settings,
   Building,
   Users,
-  Check,
   Plus,
   Shield,
   Trash2,
@@ -40,7 +39,6 @@ export const SettingsView: React.FC = () => {
 
   const [workspaceName, setWorkspaceName] = useState(workspace.name);
   const [workspaceDesc, setWorkspaceDesc] = useState(workspace.description);
-  const [savedSuccess, setSavedSuccess] = useState(false);
   const [isOrgProfileModalOpen, setIsOrgProfileModalOpen] = useState(false);
   const isAdmin = currentUser?.role === 'admin';
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -77,8 +75,7 @@ export const SettingsView: React.FC = () => {
       description: workspaceDesc.trim(),
     });
 
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+    notifySuccess('Workspace settings updated.');
   };
 
   const generateMemberPassword = () => {
@@ -182,8 +179,7 @@ export const SettingsView: React.FC = () => {
     });
 
     setEditingMember(null);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+    notifySuccess(`Saved changes to ${editName.trim()}.`);
   };
 
   const handleDeleteMember = (memberId: string, memberName: string) => {
@@ -230,13 +226,6 @@ export const SettingsView: React.FC = () => {
         </div>
 
         <form onSubmit={handleSaveWorkspace} className="mt-6 space-y-5">
-          {savedSuccess && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-lg flex items-center gap-2 animate-fade-in">
-              <Check className="w-4 h-4 text-emerald-600" />
-              <span>Workspace settings updated successfully!</span>
-            </div>
-          )}
-
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
               Workspace Name <span className="text-rose-500">*</span>
