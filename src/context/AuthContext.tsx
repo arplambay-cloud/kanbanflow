@@ -31,6 +31,7 @@ interface AuthContextType {
     role?: 'admin' | 'member',
     jobTitle?: string
   ) => Promise<{ error: any; user?: User }>;
+  deleteMember: (userId: string) => Promise<{ error?: unknown }>;
   updateMemberProfile: (
     userId: string,
     updates: { role?: 'admin' | 'member'; full_name?: string; job_title?: string; avatar_url?: string }
@@ -451,6 +452,50 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // Update Member profile in Supabase
+  /**
+   * Delete a member for real.
+   *
+   * This MUST go through the admin API. A client-side
+   * `from('profiles').delete()` is blocked by RLS — there is deliberately no
+   * DELETE policy on profiles — and Supabase reports a blocked delete as zero
+   * rows with NO error, so it looked like it worked and the member reappeared
+   * on the next refresh.
+   *
+   * The endpoint removes the profile row AND the auth.users record. Deleting
+   * only the profile is not enough: the account could still sign in and the
+   * handle_new_user trigger would recreate the row.
+   */
+  const deleteMember = async (userId: string): Promise<{ error?: unknown }> => {
+    if (!isSupabaseConfigured || !supabase || !userId) {
+      return { error: new Error('Authentication service is not configured.') };
+    }
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) {
+        return { error: new Error('Your session has expired. Please sign in again.') };
+      }
+
+      const response = await fetch('/api/create-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action: 'delete-user', userId }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.error) {
+        return { error: new Error(result.error || 'Failed to remove the member.') };
+      }
+      return { error: null };
+    } catch (err) {
+      return { error: err };
+    }
+  };
+
   const updateMemberProfile = async (
     userId: string,
     updates: { role?: 'admin' | 'member'; full_name?: string; job_title?: string; avatar_url?: string }
@@ -516,6 +561,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         updatePassword,
         inviteMember,
         createMemberWithPassword,
+        deleteMember,
         updateMemberProfile,
       }}
     >
