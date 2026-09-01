@@ -85,3 +85,30 @@ export function tasksNeedingPersist(
     return !old || old.order !== t.order || old.columnId !== t.columnId;
   });
 }
+
+/**
+ * A task must always sit in a column belonging to its own board.
+ *
+ * Moving a task between boards previously wrote the new column_id against the
+ * old board_id, producing a row that rendered on a board whose columns did not
+ * contain it — the task vanished from the UI while still existing in the
+ * database. This resolves the landing column for a board move.
+ *
+ * Returns the column the task should occupy, or null when the target board has
+ * no columns at all.
+ */
+export function resolveColumnForBoard(
+  boardId: string,
+  desiredColumnId: string | undefined,
+  columns: { id: string; boardId: string; order: number }[]
+): string | null {
+  const onBoard = columns
+    .filter((c) => c.boardId === boardId)
+    .sort((a, b) => a.order - b.order);
+
+  if (onBoard.length === 0) return null;
+  if (desiredColumnId && onBoard.some((c) => c.id === desiredColumnId)) {
+    return desiredColumnId;
+  }
+  return onBoard[0].id;
+}
