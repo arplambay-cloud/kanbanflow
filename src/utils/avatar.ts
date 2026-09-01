@@ -26,3 +26,27 @@ export function persistableAvatar(avatar?: string | null): string {
 export function isInlineAvatar(avatar?: string | null): boolean {
   return Boolean(avatar && avatar.trim().startsWith('data:'));
 }
+
+/**
+ * Recover the Storage object path from a stored avatar URL, so removing or
+ * replacing a photo can delete the underlying file instead of leaving it
+ * orphaned in the bucket.
+ *
+ * Returns null for anything that is not an avatars-bucket URL — a data URL, an
+ * external image, or an empty value — so callers can skip the delete safely.
+ */
+export function avatarStoragePath(avatar?: string | null): string | null {
+  if (!avatar) return null;
+  const trimmed = avatar.trim();
+  if (!trimmed || trimmed.startsWith('data:')) return null;
+
+  // .../storage/v1/object/public/avatars/<path>  (also matches signed URLs)
+  const match = trimmed.match(/\/storage\/v1\/object\/(?:public\/|sign\/)?avatars\/(.+?)(?:\?|$)/);
+  if (!match) return null;
+
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}

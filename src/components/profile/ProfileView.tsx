@@ -24,7 +24,7 @@ import { UserAvatar } from '../common/UserAvatar';
 import { PriorityBadge } from '../common/PriorityBadge';
 import { formatDate, isOverdue } from '../../utils/date';
 import { notifyError, notifySuccess } from '../../utils/toast';
-import { persistableAvatar } from '../../utils/avatar';
+import { persistableAvatar, avatarStoragePath } from '../../utils/avatar';
 
 export const ProfileView: React.FC = () => {
   const {
@@ -82,6 +82,8 @@ export const ProfileView: React.FC = () => {
       return;
     }
 
+    const previousAvatar = avatar;
+
     try {
       if (isSupabaseConfigured && supabase) {
         const fileExt = file.name.split('.').pop() || 'jpg';
@@ -120,6 +122,14 @@ export const ProfileView: React.FC = () => {
           data: { avatar_url: publicUrl },
         });
 
+        // Delete the photo this one replaces. Without it every re-upload left
+        // another unreferenced file in the bucket.
+        const oldPath = avatarStoragePath(previousAvatar);
+        if (oldPath && oldPath !== filePath) {
+          const { error: removeErr } = await supabase.storage.from('avatars').remove([oldPath]);
+          if (removeErr) console.warn('Could not delete replaced avatar:', removeErr.message);
+        }
+
         // No success toast here on purpose: the new photo is visible
         // immediately, and saving the form raises its own confirmation. Two
         // toasts for one edit reads as a duplicate. Failures still toast.
@@ -127,6 +137,48 @@ export const ProfileView: React.FC = () => {
       }
     } catch (err: any) {
       notifyError('Photo upload failed: ' + (err.message || 'Unknown error occurred'));
+    }
+  };
+
+  /**
+   * Remove the photo AND delete the underlying Storage object.
+   *
+   * This used to be `setAvatar('')`, which only cleared the field — the file
+   * stayed in the bucket forever, referenced by nothing.
+   */
+  const handleRemovePhoto = async () => {
+    const previous = avatar;
+    setAvatar('');
+    updateUser(currentUser.id, { avatar: '' });
+
+    if (!isSupabaseConfigured || !supabase) return;
+
+    try {
+      const { error: profileErr } = await supabase
+        .from('profiles')
+        .update({ avatar_url: '', updated_at: new Date().toISOString() })
+        .eq('id', currentUser.id);
+
+      if (profileErr) {
+        notifyError('Could not remove your photo: ' + profileErr.message);
+        setAvatar(previous);
+        return;
+      }
+
+      await supabase.auth.updateUser({ data: { avatar_url: '' } });
+
+      const path = avatarStoragePath(previous);
+      if (path) {
+        // A failure here only leaves an unreferenced file behind, so it is
+        // logged rather than shown — the photo is already gone from the UI.
+        const { error: removeErr } = await supabase.storage.from('avatars').remove([path]);
+        if (removeErr) console.warn('Could not delete avatar object:', removeErr.message);
+      }
+
+      notifySuccess('Profile photo removed.');
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : 'Unknown error';
+      notifyError('Could not remove your photo: ' + reason);
     }
   };
 
@@ -274,7 +326,7 @@ export const ProfileView: React.FC = () => {
                   {avatar && (
                     <button
                       type="button"
-                      onClick={() => setAvatar('')}
+                      onClick={handleRemovePhoto}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-lg text-xs font-semibold shadow-2xs transition-all"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
