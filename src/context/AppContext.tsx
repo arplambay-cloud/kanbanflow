@@ -131,7 +131,7 @@ const generateRandomSlug = (length = 8): string => {
 };
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { user: authUser } = useAuth();
+  const { user: authUser, deleteMember } = useAuth();
   const [isLoadingRemote, setIsLoadingRemote] = useState(false);
 
   // In-flight local write timestamp & dragging state references
@@ -597,16 +597,29 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     );
   };
 
+  /**
+   * Remove a member.
+   *
+   * Goes through the admin API, not a client-side delete: RLS has no DELETE
+   * policy on profiles, and Supabase reports a blocked delete as zero rows with
+   * NO error — so the old `from('profiles').delete()` looked like it succeeded
+   * and the member came straight back on the next refresh. The endpoint also
+   * removes the auth.users record, without which the account could sign back in
+   * and have its profile recreated by the handle_new_user trigger.
+   */
   const deleteUser = async (id: string) => {
+    markLocalWrite();
+    const previous = users;
     setUsers((prev) => prev.filter((u) => u.id !== id));
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const { error: writeError } = await supabase.from('profiles').delete().eq('id', id);
-          if (writeError) throw writeError;
-      } catch (err) {
-        console.warn('Supabase deleteUser error:', err);
-        notifySyncFailure("Removing the member", err);
-      }
+
+    if (!isSupabaseConfigured || !supabase) return;
+
+    const { error } = await deleteMember(id);
+    if (error) {
+      // Put the member back rather than leaving the UI claiming a delete that
+      // never happened.
+      setUsers(previous);
+      notifySyncFailure('Removing the member', error);
     }
   };
 
