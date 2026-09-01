@@ -28,6 +28,7 @@ import { PRIORITY_CONFIG } from '../../utils/priorityConfig';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { AttachmentRow } from './AttachmentRow';
 import { notifyError } from '../../utils/toast';
+import { ModalPortal } from '../common/ModalPortal';
 
 export const TaskModal: React.FC = () => {
   const {
@@ -264,6 +265,7 @@ export const TaskModal: React.FC = () => {
   };
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in">
       {/* Hidden Attachment input */}
       <input
@@ -794,5 +796,6 @@ export const TaskModal: React.FC = () => {
         />
       )}
     </div>
+    </ModalPortal>
   );
 };

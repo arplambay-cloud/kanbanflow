@@ -15,6 +15,7 @@ import {
   Shield,
   Layers,
 } from 'lucide-react';
+import { ModalPortal } from '../common/ModalPortal';
 
 interface MemberInvite {
   email: string;
@@ -124,6 +125,7 @@ export const OnboardingModal: React.FC = () => {
   };
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden animate-scale-up">
         {/* Top Progress Bar & Header */}
@@ -366,5 +368,6 @@ export const OnboardingModal: React.FC = () => {
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 };

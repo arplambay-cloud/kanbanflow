@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { X, Mail, AlertCircle, CheckCircle2, Loader2, ArrowRight } from 'lucide-react';
+import { ModalPortal } from '../common/ModalPortal';
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -43,6 +44,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   };
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-white rounded-xl border border-slate-200 shadow-floating w-full max-w-md p-6 relative overflow-hidden">
         {/* Close button */}
@@ -131,6 +133,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
         )}
       </div>
     </div>
+    </ModalPortal>
   );
 };
 
