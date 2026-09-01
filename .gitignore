@@ -43,3 +43,6 @@ supabase/.temp
 
 # Local pre-migration DB backup (not for the repo)
 .backup-pre-migration/
+
+# Local Claude Code config (personal, not for the team)
+.claude/

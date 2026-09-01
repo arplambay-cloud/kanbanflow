@@ -23,7 +23,7 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient';
 import { UserAvatar } from '../common/UserAvatar';
 import { PriorityBadge } from '../common/PriorityBadge';
 import { formatDate, isOverdue } from '../../utils/date';
-import { notifyError } from '../../utils/toast';
+import { notifyError, notifySuccess } from '../../utils/toast';
 import { persistableAvatar } from '../../utils/avatar';
 
 export const ProfileView: React.FC = () => {
@@ -105,15 +105,23 @@ export const ProfileView: React.FC = () => {
         setAvatar(publicUrl);
         updateUser(currentUser.id, { avatar: publicUrl });
 
-        await supabase
+        // Surface a failed write. Without this the photo appears to save, then
+        // vanishes on the next profile sync because the row never changed.
+        const { error: profileErr } = await supabase
           .from('profiles')
           .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
           .eq('id', currentUser.id);
+
+        if (profileErr) {
+          notifyError('Could not save your photo: ' + profileErr.message);
+          return;
+        }
 
         await supabase.auth.updateUser({
           data: { avatar_url: publicUrl },
         });
 
+        notifySuccess('Profile photo updated.');
         return;
       }
     } catch (err: any) {

@@ -422,9 +422,17 @@ create policy "Admins prune activity" on public.activity_logs
 -- ------------------------------------------------------------------------------
 -- 13. STORAGE BUCKETS & POLICIES
 -- ------------------------------------------------------------------------------
+-- `attachments` is private and served through short-lived signed URLs.
+-- `avatars` is public: they are shown to every workspace member and are served
+-- with getPublicUrl().
+--
+-- NOTE: the conflict clause must use `excluded.public` so each bucket keeps the
+-- value declared for it above. A literal here (e.g. `set public = false`) is
+-- applied to BOTH rows, which silently made `avatars` private and broke every
+-- avatar — getPublicUrl() on a private bucket returns a URL that 403s.
 insert into storage.buckets (id, name, public)
 values ('attachments', 'attachments', false), ('avatars', 'avatars', true)
-on conflict (id) do update set public = false;
+on conflict (id) do update set public = excluded.public;
 
 drop policy if exists "Read attachments" on storage.objects;
 drop policy if exists "Public read avatars" on storage.objects;
