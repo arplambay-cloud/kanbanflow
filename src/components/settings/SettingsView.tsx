@@ -23,6 +23,7 @@ import { ConfirmDialog } from '../common/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
 import { User } from '../../types';
 import { notifyError, notifySuccess } from '../../utils/toast';
+import { ModalPortal } from '../common/ModalPortal';
 
 export const SettingsView: React.FC = () => {
   const { inviteMember, createMemberWithPassword, updateMemberProfile } = useAuth();
@@ -416,6 +417,7 @@ export const SettingsView: React.FC = () => {
 
         {/* Edit Member Modal / Drawer */}
         {editingMember && (
+          <ModalPortal>
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
             <div className="bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-200 p-6 animate-scale-up space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -513,6 +515,7 @@ export const SettingsView: React.FC = () => {
               </form>
             </div>
           </div>
+          </ModalPortal>
         )}
 
         {/* Members List */}

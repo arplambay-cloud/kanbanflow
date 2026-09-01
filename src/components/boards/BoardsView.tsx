@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { ErrorBoundary } from '../common/ErrorBoundary';
+import { ModalPortal } from '../common/ModalPortal';
 
 const PRESET_COLORS = [
   '#7c3bed', // Primary Brand Purple
@@ -237,6 +238,7 @@ const BoardsContent: React.FC = () => {
 
       {/* Create Board Modal */}
       {isCreateModalOpen && (
+        <ModalPortal>
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
           <div
             className="w-full max-w-md bg-white rounded-xl shadow-floating border border-slate-200 overflow-hidden"
@@ -339,10 +341,12 @@ const BoardsContent: React.FC = () => {
             </form>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Edit Board Modal */}
       {editingBoard && (
+        <ModalPortal>
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
           <div
             className="w-full max-w-md bg-white rounded-xl shadow-floating border border-slate-200 overflow-hidden"
@@ -430,6 +434,7 @@ const BoardsContent: React.FC = () => {
             </form>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Delete Board Confirmation Dialog */}

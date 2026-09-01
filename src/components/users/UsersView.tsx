@@ -33,6 +33,7 @@ import { ConfirmDialog } from '../common/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
 import { notifyError, notifySuccess } from '../../utils/toast';
 import { persistableAvatar } from '../../utils/avatar';
+import { ModalPortal } from '../common/ModalPortal';
 
 export const UsersView: React.FC = () => {
   const { inviteMember, createMemberWithPassword, updateMemberProfile } = useAuth();
@@ -484,6 +485,7 @@ export const UsersView: React.FC = () => {
 
       {/* Add User Modal */}
       {isAddModalOpen && (
+        <ModalPortal>
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-200 p-6 animate-scale-up space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -647,10 +649,12 @@ export const UsersView: React.FC = () => {
             </form>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Edit User Modal */}
       {editingUser && (
+        <ModalPortal>
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-200 p-6 animate-scale-up space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -771,12 +775,14 @@ export const UsersView: React.FC = () => {
             </form>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* ========================================================================= */}
       {/* 3. VIEW USER PROFILE MODAL */}
       {/* ========================================================================= */}
       {viewingUser && (
+        <ModalPortal>
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in"
           onClick={() => setViewingUser(null)}
@@ -974,6 +980,7 @@ export const UsersView: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Delete User Confirmation Dialog */}

@@ -114,3 +114,21 @@ button, a, input, select, textarea, [tabindex] {
     animation: none;
   }
 }
+
+/* --- Modal / overlay fade -------------------------------------------------
+   `animate-fade-in` is used throughout the app but was never defined, so every
+   modal and dropdown appeared instantly with no transition. */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fade-in 160ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in {
+    animation: none;
+  }
+}
