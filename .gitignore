@@ -41,8 +41,9 @@ AUDIT-REPORT.md
 WHITE-SCREEN-BUG.md
 supabase/.temp
 
-# Local pre-migration DB backup (not for the repo)
+# Local database snapshots taken before destructive changes (not for the repo)
 .backup-pre-migration/
+.backup-hidden-rows/
 
 # Local Claude Code config (personal, not for the team)
 .claude/
