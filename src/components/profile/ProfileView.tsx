@@ -120,7 +120,9 @@ export const ProfileView: React.FC = () => {
           data: { avatar_url: publicUrl },
         });
 
-        notifySuccess('Profile photo updated.');
+        // No success toast here on purpose: the new photo is visible
+        // immediately, and saving the form raises its own confirmation. Two
+        // toasts for one edit reads as a duplicate. Failures still toast.
         return;
       }
     } catch (err: any) {

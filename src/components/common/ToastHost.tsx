@@ -142,8 +142,16 @@ export const ToastHost: React.FC = () => {
   useEffect(
     () =>
       subscribeToToasts((toast) => {
-        // Cap the stack so a burst of sync failures cannot cover the screen.
-        setToasts((prev) => [...prev, toast].slice(-4));
+        setToasts((prev) => {
+          // Collapse an identical message raised again while the first is still
+          // on screen — two handlers firing for one user action should not read
+          // as two separate events.
+          if (prev.some((t) => t.variant === toast.variant && t.message === toast.message)) {
+            return prev;
+          }
+          // Cap the stack so a burst of sync failures cannot cover the screen.
+          return [...prev, toast].slice(-4);
+        });
       }),
     []
   );
@@ -152,7 +160,9 @@ export const ToastHost: React.FC = () => {
 
   return (
     <div
-      className="pointer-events-none fixed bottom-5 right-5 z-[100] flex w-[min(26rem,calc(100vw-2.5rem))] flex-col gap-2.5"
+      // Top-right, sitting just below the app header so it never covers the
+      // New Task button or the account menu.
+      className="pointer-events-none fixed top-20 right-5 z-[100] flex w-[min(26rem,calc(100vw-2.5rem))] flex-col gap-2.5"
       aria-live="polite"
     >
       {toasts.map((toast) => (

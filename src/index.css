@@ -87,10 +87,11 @@ button, a, input, select, textarea, [tabindex] {
 }
 
 /* --- Toast notifications ------------------------------------------------- */
+/* Enters from above — the stack is anchored top-right */
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.97);
+    transform: translateY(-10px) scale(0.97);
   }
   to {
     opacity: 1;
