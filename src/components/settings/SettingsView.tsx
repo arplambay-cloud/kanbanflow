@@ -4,7 +4,6 @@ import {
   Settings,
   Building,
   Users,
-  RotateCcw,
   Check,
   Plus,
   Shield,
@@ -37,7 +36,6 @@ export const SettingsView: React.FC = () => {
     addUser,
     updateUser,
     deleteUser,
-    resetToDefaultData,
   } = useApp();
 
   const [workspaceName, setWorkspaceName] = useState(workspace.name);
@@ -607,44 +605,6 @@ export const SettingsView: React.FC = () => {
           ))}
         </div>
       </div>
-
-      {/* Demo Data & Danger Zone (Admin Only) */}
-      {isAdmin && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-subtle p-6 sm:p-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-                <RotateCcw className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-900 text-base">Reset Demo Data</h3>
-                <p className="text-xs text-slate-400">
-                  Restore the default workspace, initial boards, tasks, and users.
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                setConfirmDialog({
-                  isOpen: true,
-                  title: 'Reset Demo Data',
-                  message: 'Are you sure you want to reset all data back to the default demo state? All custom boards, tasks, and users will be replaced.',
-                  confirmLabel: 'Reset Data',
-                  onConfirm: () => {
-                    resetToDefaultData();
-                    setWorkspaceName('Acme Product Team');
-                    setConfirmDialog(null);
-                  },
-                });
-              }}
-              className="px-4 py-2 bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
-            >
-              Reset to Default
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* In-App Confirmation Dialog */}
       {confirmDialog && (
