@@ -17,6 +17,8 @@ interface VariantStyle {
   title: string;
 }
 
+// White card, colour carried by the rail and icon only:
+//   green = success, blue = info, red = rejected or failed.
 const VARIANTS: Record<ToastVariant, VariantStyle> = {
   success: {
     accent: 'bg-emerald-500',
@@ -24,23 +26,23 @@ const VARIANTS: Record<ToastVariant, VariantStyle> = {
     icon: <CheckCircle2 className="w-4 h-4" />,
     title: 'Saved',
   },
+  info: {
+    accent: 'bg-blue-500',
+    iconWrap: 'bg-blue-50 text-blue-600 ring-blue-100',
+    icon: <Info className="w-4 h-4" />,
+    title: 'Heads up',
+  },
   error: {
-    accent: 'bg-rose-500',
-    iconWrap: 'bg-rose-50 text-rose-600 ring-rose-100',
+    accent: 'bg-red-500',
+    iconWrap: 'bg-red-50 text-red-600 ring-red-100',
     icon: <AlertTriangle className="w-4 h-4" />,
     title: 'Something went wrong',
   },
   sync: {
-    accent: 'bg-amber-500',
-    iconWrap: 'bg-amber-50 text-amber-600 ring-amber-100',
+    accent: 'bg-red-500',
+    iconWrap: 'bg-red-50 text-red-600 ring-red-100',
     icon: <CloudOff className="w-4 h-4" />,
     title: 'Not saved to the server',
-  },
-  info: {
-    accent: 'bg-indigo-500',
-    iconWrap: 'bg-indigo-50 text-indigo-600 ring-indigo-100',
-    icon: <Info className="w-4 h-4" />,
-    title: 'Heads up',
   },
 };
 

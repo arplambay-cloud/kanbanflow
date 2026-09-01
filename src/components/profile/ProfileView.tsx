@@ -42,7 +42,6 @@ export const ProfileView: React.FC = () => {
   const [email, setEmail] = useState(currentUser.email);
   const [jobTitle, setJobTitle] = useState(currentUser.jobTitle || '');
   const [avatar, setAvatar] = useState(currentUser.avatar || '');
-  const [saveSuccess, setSaveSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Synchronize with currentUser when not actively editing
@@ -178,8 +177,7 @@ export const ProfileView: React.FC = () => {
     }
 
     setIsEditing(false);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+    notifySuccess('Your profile details have been saved.');
   };
 
   const handleCancelEdit = () => {
@@ -222,14 +220,6 @@ export const ProfileView: React.FC = () => {
           </button>
         )}
       </div>
-
-      {/* Save Success Banner */}
-      {saveSuccess && (
-        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold flex items-center gap-2 animate-fade-in shadow-2xs">
-          <Check className="w-4 h-4 text-emerald-600" />
-          <span>Your profile details have been saved successfully!</span>
-        </div>
-      )}
 
       {/* User Card */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-subtle p-6 sm:p-8">
