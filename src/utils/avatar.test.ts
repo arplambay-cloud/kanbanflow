@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { persistableAvatar, isInlineAvatar } from './avatar';
+import { persistableAvatar, isInlineAvatar, avatarStoragePath } from './avatar';
 
 describe('persistableAvatar', () => {
   it('keeps a normal Storage URL', () => {
@@ -37,5 +37,35 @@ describe('isInlineAvatar', () => {
     expect(isInlineAvatar('https://example.com/a.png')).toBe(false);
     expect(isInlineAvatar('')).toBe(false);
     expect(isInlineAvatar(undefined)).toBe(false);
+  });
+});
+
+describe('avatarStoragePath', () => {
+  const base = 'https://aoxpcehnqwwcjahqdkbd.supabase.co/storage/v1/object/public/avatars/';
+
+  it('recovers the object path from a public avatar URL', () => {
+    expect(avatarStoragePath(base + 'user-123/avatar_1788.png')).toBe('user-123/avatar_1788.png');
+  });
+
+  it('handles a signed URL and strips the query', () => {
+    const signed =
+      'https://x.supabase.co/storage/v1/object/sign/avatars/u/a.png?token=abc.def';
+    expect(avatarStoragePath(signed)).toBe('u/a.png');
+  });
+
+  it('decodes percent-encoded names', () => {
+    expect(avatarStoragePath(base + 'u/my%20photo.png')).toBe('u/my photo.png');
+  });
+
+  it('returns null for values that are not avatar objects', () => {
+    expect(avatarStoragePath('data:image/png;base64,AAA')).toBeNull();
+    expect(avatarStoragePath('https://images.unsplash.com/photo-123')).toBeNull();
+    expect(avatarStoragePath('')).toBeNull();
+    expect(avatarStoragePath(undefined)).toBeNull();
+  });
+
+  it('does not match the attachments bucket', () => {
+    const att = 'https://x.supabase.co/storage/v1/object/public/attachments/t/f.png';
+    expect(avatarStoragePath(att)).toBeNull();
   });
 });
