@@ -141,7 +141,7 @@ export default async function handler(req: any, res: any) {
   }
 
   // 4. Process the user creation / invitation request
-  const { email, password, fullName, role, jobTitle } = req.body || {};
+  const { email, password, fullName, role, jobTitle, avatar } = req.body || {};
 
   if (!email) {
     return res.status(400).json({ error: 'Email address is required.' });
@@ -152,6 +152,12 @@ export default async function handler(req: any, res: any) {
   const cleanRole = role === 'admin' ? 'admin' : 'member';
   const cleanTitle = jobTitle ? String(jobTitle).trim() : (cleanRole === 'admin' ? 'Workspace Admin' : 'Team Member');
   const cleanName = fullName ? String(fullName).trim() : cleanEmail.split('@')[0];
+
+  // Avatar chosen while creating the member. Same guard as the client: never
+  // store inline image data or an implausibly long value in the column.
+  const rawAvatar = avatar ? String(avatar).trim() : '';
+  const cleanAvatar =
+    rawAvatar && !rawAvatar.startsWith('data:') && rawAvatar.length <= 500 ? rawAvatar : '';
 
   try {
     if (cleanPassword) {
@@ -184,6 +190,7 @@ export default async function handler(req: any, res: any) {
           email: cleanEmail,
           role: cleanRole,
           job_title: cleanTitle,
+          avatar_url: cleanAvatar,
           updated_at: new Date().toISOString(),
         });
       }
@@ -229,6 +236,7 @@ export default async function handler(req: any, res: any) {
           email: cleanEmail,
           role: cleanRole,
           job_title: cleanTitle,
+          avatar_url: cleanAvatar,
           updated_at: new Date().toISOString(),
         });
       }

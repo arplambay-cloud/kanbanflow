@@ -94,7 +94,10 @@ export const SettingsView: React.FC = () => {
     const trimmedName = newMemberName.trim();
     const trimmedTitle = newMemberTitle.trim() || (newMemberRole === 'admin' ? 'Workspace Admin' : 'Team Member');
     const trimmedPassword = newMemberPassword.trim();
-    const avatarUrl = `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`;
+    // This form has no photo picker. An empty avatar renders initials; the old
+    // hardcoded Unsplash URL only ever lived in local state, so it vanished on
+    // the next refresh and looked like the photo had been lost.
+    const avatarUrl = '';
 
     setIsCreatingMember(true);
 
@@ -106,7 +109,8 @@ export const SettingsView: React.FC = () => {
           trimmedPassword,
           trimmedName,
           newMemberRole,
-          trimmedTitle
+          trimmedTitle,
+          avatarUrl
         );
 
         if (error) {
@@ -132,7 +136,7 @@ export const SettingsView: React.FC = () => {
         });
 
         // Send invitation / password link via email
-        await inviteMember(trimmedEmail, trimmedName, newMemberRole, trimmedTitle);
+        await inviteMember(trimmedEmail, trimmedName, newMemberRole, trimmedTitle, avatarUrl);
       }
 
       setNewMemberName('');
