@@ -47,3 +47,32 @@ export async function resolveAttachmentUrl(stored: string): Promise<string> {
 export function clearAttachmentUrlCache(): void {
   cache.clear();
 }
+
+/**
+ * Recover the Storage object path from a stored attachment reference, so
+ * deleting an attachment can remove the underlying file instead of leaving it
+ * orphaned in the bucket.
+ *
+ * New attachments store the object path directly. Older rows may hold an
+ * absolute public or signed URL, so both shapes are handled. Returns null for
+ * anything that is not an attachments-bucket object (a data URI, an external
+ * link) so callers can skip the delete safely.
+ */
+export function attachmentStoragePath(stored?: string | null): string | null {
+  if (!stored) return null;
+  const trimmed = stored.trim();
+  if (!trimmed || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) return null;
+
+  if (!isAbsoluteUrl(trimmed)) return trimmed;
+
+  const match = trimmed.match(
+    /\/storage\/v1\/object\/(?:public\/|sign\/)?attachments\/(.+?)(?:\?|$)/
+  );
+  if (!match) return null;
+
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}

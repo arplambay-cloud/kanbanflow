@@ -26,6 +26,7 @@ import { useAuth } from './AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { reorderTasks, tasksNeedingPersist, resolveColumnForBoard } from '../utils/taskReorder';
 import { notifySyncFailure } from '../utils/toast';
+import { attachmentStoragePath } from '../utils/attachmentUrl';
 
 interface TaskModalState {
   isOpen: boolean;
@@ -374,7 +375,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           taskId: c.task_id,
           userId: c.user_id,
           userName: c.user_name,
-          userAvatar: c.user_avatar || '',
+          // Resolved from profiles, not read from the row — see avatarById.
+          userAvatar: avatarById.get(c.user_id) || c.user_avatar || '',
           content: c.content,
           createdAt: c.created_at,
         });
@@ -1186,6 +1188,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const deleteAttachment = (taskId: string, attachmentId: string) => {
     markLocalWrite();
+
+    // Capture the storage path BEFORE the row leaves local state. Deleting
+    // only the database row left the uploaded file sitting in the bucket
+    // forever, referenced by nothing.
+    const doomed = tasks
+      .find((t) => t.id === taskId)
+      ?.attachments?.find((a) => a.id === attachmentId);
+    const storagePath = attachmentStoragePath(doomed?.url);
+
     setTasks((prev) =>
       prev.map((t) =>
         t.id === taskId
@@ -1205,6 +1216,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         try {
           const { error: writeError } = await client.from('task_attachments').delete().eq('id', attachmentId);
             if (writeError) throw writeError;
+
+          if (storagePath) {
+            // The row is already gone, so a failure here only leaves an
+            // unreferenced file - log it rather than alarming the user.
+            const { error: removeErr } = await client.storage
+              .from('attachments')
+              .remove([storagePath]);
+            if (removeErr) console.warn('Could not delete attachment file:', removeErr.message);
+          }
         } catch (err) {
           console.warn('Supabase deleteAttachment error:', err);
           notifySyncFailure("Deleting the attachment", err);
