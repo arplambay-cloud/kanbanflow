@@ -24,6 +24,7 @@ import { useAuth } from '../../context/AuthContext';
 import { User } from '../../types';
 import { notifyError, notifySuccess } from '../../utils/toast';
 import { ModalPortal } from '../common/ModalPortal';
+import { AutoGrowTextarea } from '../common/AutoGrowTextarea';
 
 export const SettingsView: React.FC = () => {
   const { inviteMember, createMemberWithPassword, updateMemberProfile } = useAuth();
@@ -251,12 +252,12 @@ export const SettingsView: React.FC = () => {
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
               Workspace Description
             </label>
-            <textarea
-              rows={2}
+            <AutoGrowTextarea
+              minRows={2}
               value={workspaceDesc}
               onChange={(e) => setWorkspaceDesc(e.target.value)}
               placeholder="Brief summary of your team's mission or purpose..."
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 resize-none transition-all"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all"
             />
           </div>
 
