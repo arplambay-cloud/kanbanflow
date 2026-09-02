@@ -27,6 +27,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { reorderTasks, tasksNeedingPersist, resolveColumnForBoard } from '../utils/taskReorder';
 import { notifySyncFailure } from '../utils/toast';
 import { attachmentStoragePath } from '../utils/attachmentUrl';
+import { avatarStoragePath } from '../utils/avatar';
 
 interface TaskModalState {
   isOpen: boolean;
@@ -616,15 +617,54 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     if (!isSupabaseConfigured || !supabase) return;
 
+    // Their avatar file is not cascaded by the database either.
+    const avatarPath = avatarStoragePath(previous.find((u) => u.id === id)?.avatar);
+
     const { error } = await deleteMember(id);
     if (error) {
       // Put the member back rather than leaving the UI claiming a delete that
       // never happened.
       setUsers(previous);
       notifySyncFailure('Removing the member', error);
+      return;
     }
+
+    await removeStorageObjects('avatars', avatarPath ? [avatarPath] : []);
   };
 
+
+  // ---------------------------------------------------------------------
+  // Storage cleanup
+  //
+  // Deleting a row cascades to child ROWS via foreign keys, but never to the
+  // FILES those rows point at. Removing a task, column, board or member used
+  // to leave its uploads stranded in the bucket forever. Every delete path
+  // now collects the owned object paths first and removes them.
+  // ---------------------------------------------------------------------
+
+  /** Storage paths of every attachment belonging to the given tasks. */
+  const attachmentPathsForTasks = (taskIds: string[]): string[] => {
+    const wanted = new Set(taskIds);
+    return tasks
+      .filter((t) => wanted.has(t.id))
+      .flatMap((t) => (t.attachments || []).map((a) => attachmentStoragePath(a.url)))
+      .filter((path): path is string => Boolean(path));
+  };
+
+  /**
+   * Delete objects from a bucket. Failures are logged rather than surfaced:
+   * the database row is already gone, so the only consequence is a file that
+   * nothing references.
+   */
+  const removeStorageObjects = async (
+    bucket: 'attachments' | 'avatars',
+    paths: string[]
+  ): Promise<void> => {
+    if (!paths.length || !isSupabaseConfigured || !supabase) return;
+    const unique = [...new Set(paths)];
+    const { error } = await supabase.storage.from(bucket).remove(unique);
+    if (error) console.warn('Could not delete ' + bucket + ' objects:', error.message);
+  };
   // Board Actions
   const createBoard = (title: string, description = '', color = '#4f46e5'): string => {
     markLocalWrite();
@@ -718,6 +758,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const deleteBoard = (id: string) => {
     markLocalWrite();
+
+    const doomedPaths = attachmentPathsForTasks(
+      tasks.filter((t) => t.boardId === id).map((t) => t.id)
+    );
     const targetBoard = boards.find((b) => b.id === id);
     setBoards((prev) => prev.filter((b) => b.id !== id));
     setColumns((prev) => prev.filter((c) => c.boardId !== id));
@@ -729,6 +773,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         try {
           const { error: writeError } = await client.from('boards').delete().eq('id', id);
             if (writeError) throw writeError;
+
+          await removeStorageObjects('attachments', doomedPaths);
         } catch (err) {
           console.warn('Supabase deleteBoard error:', err);
           notifySyncFailure("Deleting the board", err);
@@ -814,6 +860,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const deleteColumn = (id: string) => {
     markLocalWrite();
+
+    const doomedPaths = attachmentPathsForTasks(
+      tasks.filter((t) => t.columnId === id).map((t) => t.id)
+    );
     setColumns((prev) => prev.filter((c) => c.id !== id));
     setTasks((prev) => prev.filter((t) => t.columnId !== id));
 
@@ -823,6 +873,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         try {
           const { error: writeError } = await client.from('columns').delete().eq('id', id);
             if (writeError) throw writeError;
+
+          await removeStorageObjects('attachments', doomedPaths);
         } catch (err) {
           console.warn('Supabase deleteColumn error:', err);
           notifySyncFailure("Deleting the column", err);
@@ -975,6 +1027,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const deleteTask = (id: string) => {
     markLocalWrite();
+
+    // The database cascades child ROWS, never the FILES they point at.
+    const doomedPaths = attachmentPathsForTasks([id]);
     const task = tasks.find((t) => t.id === id);
     setTasks((prev) => prev.filter((t) => t.id !== id));
 
@@ -984,6 +1039,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         try {
           const { error: writeError } = await client.from('tasks').delete().eq('id', id);
             if (writeError) throw writeError;
+
+          await removeStorageObjects('attachments', doomedPaths);
         } catch (err) {
           console.warn('Supabase deleteTask error:', err);
           notifySyncFailure("Deleting the task", err);
