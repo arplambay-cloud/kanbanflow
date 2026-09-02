@@ -310,7 +310,7 @@ export const TaskListView: React.FC = () => {
                           )}
                         </div>
                         {task.description && (
-                          <div className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
+                          <div className="text-[11px] text-slate-400 line-clamp-1 mt-0.5 break-words">
                             {task.description}
                           </div>
                         )}
