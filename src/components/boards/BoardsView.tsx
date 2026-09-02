@@ -166,7 +166,7 @@ const BoardsContent: React.FC = () => {
                   </div>
                 </div>
 
-                <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed break-words">
                   {board.description || 'No description provided.'}
                 </p>
               </div>

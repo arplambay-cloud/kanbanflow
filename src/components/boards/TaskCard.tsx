@@ -111,7 +111,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, index, columns }) => {
 
           {/* Task Description Preview */}
           {task.description && (
-            <p className="text-[11px] text-slate-400 line-clamp-2 mb-3 leading-normal">
+            <p className="text-[11px] text-slate-400 line-clamp-2 mb-3 leading-normal break-words">
               {task.description}
             </p>
           )}

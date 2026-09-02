@@ -531,7 +531,7 @@ export const TaskModal: React.FC = () => {
                   </div>
 
                   {/* Comment Thread List */}
-                  <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
+                  <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-2.5 pr-1 min-w-0">
                     {currentTaskComments.length === 0 ? (
                       <div className="h-full flex flex-col items-center justify-center py-6 text-center text-slate-400">
                         <MessageSquare className="w-6 h-6 text-slate-300 mb-1" />
@@ -541,10 +541,10 @@ export const TaskModal: React.FC = () => {
                       currentTaskComments.map((comment) => (
                         <div
                           key={comment.id}
-                          className="p-2.5 bg-white border border-slate-200 rounded-lg space-y-1 group"
+                          className="p-2.5 bg-white border border-slate-200 rounded-lg space-y-1 group min-w-0 overflow-hidden"
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
                               <UserAvatar
                                 user={{
                                   id: comment.userId,
@@ -556,7 +556,7 @@ export const TaskModal: React.FC = () => {
                                 }}
                                 size="xs"
                               />
-                              <span className="text-xs font-bold text-slate-800">{comment.userName}</span>
+                              <span className="text-xs font-bold text-slate-800 truncate">{comment.userName}</span>
                               <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
                                 <Clock className="w-2.5 h-2.5" />
                                 {formatDate(comment.createdAt)}
@@ -574,7 +574,7 @@ export const TaskModal: React.FC = () => {
                               </button>
                             )}
                           </div>
-                          <p className="text-[11px] text-slate-700 whitespace-pre-wrap leading-relaxed">
+                          <p className="text-[11px] text-slate-700 whitespace-pre-wrap leading-relaxed break-words [overflow-wrap:anywhere]">
                             {comment.content}
                           </p>
                         </div>
