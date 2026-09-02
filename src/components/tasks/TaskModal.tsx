@@ -371,32 +371,7 @@ export const TaskModal: React.FC = () => {
                   />
                 </div>
 
-  
-              {/* Client — first of the classification fields, full width so
-                  longer client names are not truncated. */}
-              <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
-                  <span className="inline-flex items-center gap-1.5">
-                    <Briefcase className="w-3.5 h-3.5 text-slate-400" /> Client
-                  </span>
-                </label>
-                <CustomDropdown
-                  size="sm"
-                  value={clientId}
-                  onChange={(val) => setClientId(val)}
-                  options={[
-                    { value: '', label: 'No client' },
-                    ...clients.map((c) => ({
-                      value: c.id,
-                      label: c.name,
-                      colorDot: c.color || '#7c3bed',
-                    })),
-                  ]}
-                  className="w-full"
-                />
-              </div>
-
-              {/* Board & Column */}
+                {/* Board & Column */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
@@ -695,6 +670,30 @@ export const TaskModal: React.FC = () => {
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Add details, requirements, or links..."
                   className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-xs sm:text-sm transition-all"
+                />
+              </div>
+
+              {/* Client — first of the classification fields, full width so
+                  longer client names are not truncated. */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Briefcase className="w-3.5 h-3.5 text-slate-400" /> Client
+                  </span>
+                </label>
+                <CustomDropdown
+                  size="sm"
+                  value={clientId}
+                  onChange={(val) => setClientId(val)}
+                  options={[
+                    { value: '', label: 'No client' },
+                    ...clients.map((c) => ({
+                      value: c.id,
+                      label: c.name,
+                      colorDot: c.color || '#7c3bed',
+                    })),
+                  ]}
+                  className="w-full"
                 />
               </div>
 
