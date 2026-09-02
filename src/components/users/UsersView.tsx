@@ -32,7 +32,7 @@ import { formatDate } from '../../utils/date';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
 import { notifyError, notifySuccess } from '../../utils/toast';
-import { persistableAvatar } from '../../utils/avatar';
+import { persistableAvatar, avatarStoragePath } from '../../utils/avatar';
 import { ModalPortal } from '../common/ModalPortal';
 
 export const UsersView: React.FC = () => {
@@ -116,7 +116,9 @@ export const UsersView: React.FC = () => {
   // Handle local file uploads
   const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    setTargetAvatar: (val: string) => void
+    setTargetAvatar: (val: string) => void,
+    previousValue = '',
+    savedAvatar = ''
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -145,6 +147,17 @@ export const UsersView: React.FC = () => {
           .getPublicUrl(filePath);
 
         const publicUrl = publicUrlData?.publicUrl || filePath;
+
+        // Bin the photo this one replaces. Picking a second image in the same
+        // modal used to leave the first stranded in the bucket, referenced by
+        // nothing. Only remove an unsaved upload - never the saved avatar,
+        // which is cleaned up on save instead.
+        const replaced = avatarStoragePath(previousValue);
+        if (replaced && replaced !== filePath && previousValue !== savedAvatar) {
+          const { error: rmErr } = await supabase.storage.from('avatars').remove([replaced]);
+          if (rmErr) console.warn('Could not delete replaced avatar:', rmErr.message);
+        }
+
         setTargetAvatar(publicUrl);
         return;
       }
@@ -263,6 +276,14 @@ export const UsersView: React.FC = () => {
       avatar: editAvatar.trim() || undefined,
     });
 
+    // Bin the previously saved photo once the new one is committed.
+    const previousAvatarPath = avatarStoragePath(editingUser.avatar);
+    const nextAvatarPath = avatarStoragePath(editAvatar);
+    if (previousAvatarPath && previousAvatarPath !== nextAvatarPath && supabase) {
+      const { error: rmErr } = await supabase.storage.from('avatars').remove([previousAvatarPath]);
+      if (rmErr) console.warn('Could not delete replaced avatar:', rmErr.message);
+    }
+
     setEditingUser(null);
     notifySuccess(`Updated details & set role to ${editRole.toUpperCase()} in Supabase for ${editName.trim()}.`);
   };
@@ -282,14 +303,14 @@ export const UsersView: React.FC = () => {
         ref={addFileInputRef}
         type="file"
         accept="image/*"
-        onChange={(e) => handleFileUpload(e, setNewAvatar)}
+        onChange={(e) => handleFileUpload(e, setNewAvatar, newAvatar)}
         className="hidden"
       />
       <input
         ref={editFileInputRef}
         type="file"
         accept="image/*"
-        onChange={(e) => handleFileUpload(e, setEditAvatar)}
+        onChange={(e) => handleFileUpload(e, setEditAvatar, editAvatar, editingUser?.avatar || '')}
         className="hidden"
       />
 
