@@ -6,6 +6,7 @@ import {
   Calendar,
   User,
   Layout,
+  Briefcase,
   Tag,
   Trash2,
   CheckCircle2,
@@ -38,6 +39,7 @@ export const TaskModal: React.FC = () => {
     boards,
     columns,
     users,
+    clients,
     tasks,
     currentUser,
     createTask,
@@ -59,6 +61,7 @@ export const TaskModal: React.FC = () => {
   const [selectedBoardId, setSelectedBoardId] = useState('');
   const [selectedColumnId, setSelectedColumnId] = useState('');
   const [assigneeId, setAssigneeId] = useState<string>('');
+  const [clientId, setClientId] = useState<string>('');
   const [dueDate, setDueDate] = useState<string>('');
   const [priority, setPriority] = useState<Priority>('medium');
   const [error, setError] = useState('');
@@ -88,6 +91,7 @@ export const TaskModal: React.FC = () => {
         setSelectedBoardId(currentData.boardId);
         setSelectedColumnId(currentData.columnId);
         setAssigneeId(currentData.assigneeId || '');
+        setClientId(currentData.clientId || '');
         setDueDate(currentData.dueDate || '');
         setPriority(currentData.priority);
       } else {
@@ -101,6 +105,7 @@ export const TaskModal: React.FC = () => {
         setSelectedBoardId(defaultBoard);
         setSelectedColumnId(defaultCol);
         setAssigneeId('');
+        setClientId('');
         setDueDate('');
         setPriority('medium');
       }
@@ -148,6 +153,7 @@ export const TaskModal: React.FC = () => {
         boardId: selectedBoardId,
         columnId: selectedColumnId,
         assigneeId: assigneeId || undefined,
+        clientId: clientId || undefined,
         dueDate: dueDate || undefined,
         priority,
       });
@@ -158,6 +164,7 @@ export const TaskModal: React.FC = () => {
         boardId: selectedBoardId,
         columnId: selectedColumnId,
         assigneeId: assigneeId || undefined,
+        clientId: clientId || undefined,
         dueDate: dueDate || undefined,
         priority,
       });
@@ -339,7 +346,57 @@ export const TaskModal: React.FC = () => {
                   />
                 </div>
 
-                {/* Board & Column */}
+
+                {/* Client — first of the classification fields, full width so
+                    longer client names are not truncated. */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Briefcase className="w-3.5 h-3.5 text-slate-400" /> Client
+                    </span>
+                  </label>
+                  <CustomDropdown
+                    size="sm"
+                    value={clientId}
+                    onChange={(val) => setClientId(val)}
+                    options={[
+                      { value: '', label: 'No client' },
+                      ...clients.map((c) => ({
+                        value: c.id,
+                        label: c.name,
+                        colorDot: c.color || '#7c3bed',
+                      })),
+                    ]}
+                    className="w-full"
+                  />
+                </div>
+
+  
+              {/* Client — first of the classification fields, full width so
+                  longer client names are not truncated. */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Briefcase className="w-3.5 h-3.5 text-slate-400" /> Client
+                  </span>
+                </label>
+                <CustomDropdown
+                  size="sm"
+                  value={clientId}
+                  onChange={(val) => setClientId(val)}
+                  options={[
+                    { value: '', label: 'No client' },
+                    ...clients.map((c) => ({
+                      value: c.id,
+                      label: c.name,
+                      colorDot: c.color || '#7c3bed',
+                    })),
+                  ]}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Board & Column */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">

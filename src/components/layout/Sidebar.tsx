@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Kanban,
   CheckSquare,
+  Briefcase,
   Bell,
   Users,
   User as UserIcon,
@@ -48,6 +49,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'boards', label: 'Boards', icon: Kanban },
     { id: 'tasks', label: 'Tasks', icon: CheckSquare },
+    { id: 'clients', label: 'Clients', icon: Briefcase },
     {
       id: 'notifications',
       label: 'Notifications',

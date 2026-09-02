@@ -36,6 +36,7 @@ export interface Task {
   columnId: string;
   title: string;
   description: string;
+  clientId?: string;
   assigneeId?: string;
   dueDate?: string; // ISO date string YYYY-MM-DD
   priority: Priority;
@@ -51,6 +52,15 @@ export interface Column {
   boardId: string;
   title: string;
   order: number;
+}
+
+/** A client the work is being done for. Tasks optionally belong to one. */
+export interface Client {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Board {
@@ -99,4 +109,4 @@ export interface Workspace {
   createdAt: string;
 }
 
-export type ActivePage = 'dashboard' | 'boards' | 'board-detail' | 'tasks' | 'notifications' | 'users' | 'profile' | 'settings';
+export type ActivePage = 'dashboard' | 'boards' | 'board-detail' | 'tasks' | 'clients' | 'notifications' | 'users' | 'profile' | 'settings';
