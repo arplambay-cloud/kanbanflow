@@ -29,6 +29,7 @@ import { ConfirmDialog } from '../common/ConfirmDialog';
 import { AttachmentRow } from './AttachmentRow';
 import { notifyError } from '../../utils/toast';
 import { ModalPortal } from '../common/ModalPortal';
+import { AutoGrowTextarea } from '../common/AutoGrowTextarea';
 
 export const TaskModal: React.FC = () => {
   const {
@@ -330,12 +331,11 @@ export const TaskModal: React.FC = () => {
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
                     Description
                   </label>
-                  <textarea
-                    rows={3}
+                  <AutoGrowTextarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Add details, requirements, or links..."
-                    className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-xs sm:text-sm resize-none transition-all"
+                    className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-xs sm:text-sm transition-all"
                   />
                 </div>
 
@@ -633,12 +633,11 @@ export const TaskModal: React.FC = () => {
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
                   Description
                 </label>
-                <textarea
-                  rows={3}
+                <AutoGrowTextarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Add details, requirements, or links..."
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-xs sm:text-sm resize-none transition-all"
+                  className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 text-xs sm:text-sm transition-all"
                 />
               </div>
 

@@ -16,6 +16,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { ModalPortal } from '../common/ModalPortal';
+import { AutoGrowTextarea } from '../common/AutoGrowTextarea';
 
 interface MemberInvite {
   email: string;
@@ -185,12 +186,12 @@ export const OnboardingModal: React.FC = () => {
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
                   Workspace Description
                 </label>
-                <textarea
-                  rows={2}
+                <AutoGrowTextarea
+                  minRows={2}
                   value={workspaceDesc}
                   onChange={(e) => setWorkspaceDesc(e.target.value)}
                   placeholder="Brief summary of your team's focus..."
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 resize-none transition-all"
+                  className="w-full px-3.5 py-2 rounded-lg border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-600 transition-all"
                 />
               </div>
 
