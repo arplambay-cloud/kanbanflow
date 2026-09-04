@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
 import { timeAgo } from '../../utils/date';
+import { resolveNotificationTarget } from '../../utils/notificationTarget';
 
 export const NotificationsView: React.FC = () => {
   const {
@@ -38,18 +39,10 @@ export const NotificationsView: React.FC = () => {
 
   const handleNotificationClick = (n: typeof notifications[0]) => {
     markNotificationAsRead(n.id);
-    if (n.boardId) {
-      navigateToBoard(n.boardId);
-    }
-    if (n.taskId) {
-      const task = tasks.find((t) => t.id === n.taskId);
-      if (task) {
-        if (task.boardId && task.boardId !== n.boardId) {
-          navigateToBoard(task.boardId);
-        }
-        openTaskModal(task);
-      }
-    }
+
+    const { boardId, task, focusComments } = resolveNotificationTarget(n, tasks);
+    if (boardId) navigateToBoard(boardId);
+    if (task) openTaskModal(task, undefined, undefined, focusComments);
   };
 
   return (

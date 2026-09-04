@@ -12,10 +12,13 @@ import {
   Search,
   Kanban,
   AlertCircle,
+  ArrowDownWideNarrow,
 } from 'lucide-react';
 import { CustomDropdown } from '../common/CustomDropdown';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { ErrorBoundary } from '../common/ErrorBoundary';
+import { BoardSortMode } from '../../types';
+import { allowsManualReorder, sortTasksForColumn } from '../../utils/taskSort';
 
 const BoardDetailContent: React.FC = () => {
   const {
@@ -31,6 +34,7 @@ const BoardDetailContent: React.FC = () => {
     openTaskModal,
     users,
     setIsDragging,
+    updateBoard,
     currentUser,
     isLoadingRemote,
   } = useApp();
@@ -93,6 +97,9 @@ const BoardDetailContent: React.FC = () => {
     );
   }
 
+  const sortMode: BoardSortMode = currentBoard.sortMode || 'manual';
+  const canReorder = allowsManualReorder(sortMode);
+
   // Board's columns sorted by order
   const boardColumns = (columns || [])
     .filter((c) => c && c.boardId === currentBoard.id)
@@ -124,6 +131,10 @@ const BoardDetailContent: React.FC = () => {
       ) {
         return;
       }
+
+      // In a derived mode the drop index would be discarded on the next
+      // render, so only the column change is meaningful.
+      if (!canReorder && destination.droppableId === source.droppableId) return;
 
       moveTask(draggableId, destination.droppableId, destination.index);
     } catch (e) {
@@ -212,6 +223,31 @@ const BoardDetailContent: React.FC = () => {
               className="min-w-[130px]"
             />
 
+            {/* Card Order */}
+            <div
+              className="flex items-center gap-1.5"
+              title={
+                canReorder
+                  ? 'Cards keep the order you drag them into.'
+                  : 'Cards order themselves. Dragging between columns still works.'
+              }
+            >
+              <ArrowDownWideNarrow className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <CustomDropdown
+                size="sm"
+                value={sortMode}
+                onChange={(val) =>
+                  updateBoard(currentBoard.id, { sortMode: val as BoardSortMode })
+                }
+                options={[
+                  { value: 'manual', label: 'Manual order' },
+                  { value: 'priority', label: 'Priority first' },
+                  { value: 'newest', label: 'Newest first' },
+                ]}
+                className="min-w-[140px]"
+              />
+            </div>
+
             {/* Add Task Button */}
             <button
               onClick={() => openTaskModal(undefined, currentBoard.id)}
@@ -234,9 +270,10 @@ const BoardDetailContent: React.FC = () => {
       >
         <div className="flex-1 overflow-x-auto p-4 sm:p-6 flex items-start gap-4 sm:gap-5">
           {boardColumns.map((column) => {
-            const columnTasks = filteredTasks
-              .filter((t) => t.columnId === column.id)
-              .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+            const columnTasks = sortTasksForColumn(
+              filteredTasks.filter((t) => t.columnId === column.id),
+              sortMode
+            );
 
             const isEditing = editingColumnId === column.id;
             const isMenuOpen = activeMenuColumnId === column.id;

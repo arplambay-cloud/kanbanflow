@@ -1,3 +1,11 @@
+/**
+ * How a board orders the cards inside each of its columns.
+ *
+ * 'manual' keeps the hand-arranged order that drag-and-drop writes; the
+ * others derive the order from the task itself.
+ */
+export type BoardSortMode = 'manual' | 'priority' | 'newest';
+
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface User {
@@ -68,11 +76,18 @@ export interface Board {
   title: string;
   description?: string;
   color: string;
+  /** How this board's columns order their cards. Defaults to 'manual'. */
+  sortMode: BoardSortMode;
   createdAt: string;
   updatedAt: string;
 }
 
-export type NotificationType = 'task_assigned' | 'status_changed' | 'task_completed' | 'board_created';
+export type NotificationType =
+  | 'task_assigned'
+  | 'status_changed'
+  | 'task_completed'
+  | 'board_created'
+  | 'comment_added';
 
 export interface Notification {
   id: string;

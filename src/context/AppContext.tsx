@@ -25,6 +25,7 @@ import {
 } from '../data/initialData';
 import { useAuth } from './AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import { isBoardSortMode } from '../utils/taskSort';
 import { reorderTasks, tasksNeedingPersist, resolveColumnForBoard } from '../utils/taskReorder';
 import { notifySyncFailure } from '../utils/toast';
 import { attachmentStoragePath } from '../utils/attachmentUrl';
@@ -35,6 +36,8 @@ interface TaskModalState {
   task: Task | null;
   initialBoardId?: string;
   initialColumnId?: string;
+  /** Opened from a comment notification — scroll straight to the thread. */
+  focusComments?: boolean;
 }
 
 interface AppContextType {
@@ -88,7 +91,12 @@ interface AppContextType {
   setActivePage: (page: ActivePage) => void;
   navigateToBoard: (boardId: string) => void;
   taskModalState: TaskModalState;
-  openTaskModal: (task?: Task, initialBoardId?: string, initialColumnId?: string) => void;
+  openTaskModal: (
+    task?: Task,
+    initialBoardId?: string,
+    initialColumnId?: string,
+    focusComments?: boolean
+  ) => void;
   closeTaskModal: () => void;
   refreshRemoteData: () => Promise<void>;
   isLoadingRemote: boolean;
@@ -349,6 +357,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           title: b.title,
           description: b.description || '',
           color: b.color || '#4f46e5',
+          sortMode: isBoardSortMode(b.sort_mode) ? b.sort_mode : 'manual',
           createdAt: b.created_at,
           updatedAt: b.updated_at || b.created_at,
         }));
@@ -798,6 +807,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       id: boardId,
       title,
       description,
+      sortMode: 'manual',
       color,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -862,6 +872,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               ...(partial.title !== undefined ? { title: partial.title } : {}),
               ...(partial.description !== undefined ? { description: partial.description } : {}),
               ...(partial.color !== undefined ? { color: partial.color } : {}),
+              ...(partial.sortMode !== undefined ? { sort_mode: partial.sortMode } : {}),
               updated_at: new Date().toISOString(),
             })
             .eq('id', id);
@@ -1015,10 +1026,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     markLocalWrite();
     const taskId = 'task-' + Date.now() + '-' + generateRandomSlug(4);
     const tasksInColumn = tasks.filter((t) => t.columnId === data.columnId);
+    // Newest task leads the column. Using min-1 avoids rewriting every sibling
+    // row just to make room at index 0; a later drag reindexes them anyway.
+    const topOrder = tasksInColumn.length
+      ? Math.min(...tasksInColumn.map((t) => t.order ?? 0)) - 1
+      : 0;
     const newTask: Task = {
       id: taskId,
       ...data,
-      order: tasksInColumn.length,
+      order: topOrder,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       comments: [],
@@ -1041,7 +1057,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             due_date: data.dueDate || null,
             assignee_id: data.assigneeId || null,
             client_id: data.clientId || null,
-            order: tasksInColumn.length,
+            order: topOrder,
           });
             if (writeError) throw writeError;
         } catch (err) {
@@ -1607,13 +1623,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const openTaskModal = (
     task?: Task,
     initialBoardId?: string,
-    initialColumnId?: string
+    initialColumnId?: string,
+    focusComments?: boolean
   ) => {
     setTaskModalState({
       isOpen: true,
       task: task || null,
       initialBoardId,
       initialColumnId,
+      focusComments,
     });
   };
 
