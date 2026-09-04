@@ -34,20 +34,40 @@ jobs:
       - name: Build
         run: npm run build
 
-      # `npm audit` exits 1 both for real findings and for registry failures,
-      # and the quick-audit endpoint it uses is being retired — a 500 from npm
-      # failed CI on an unrelated pull request, after hanging for five minutes.
-      # Parse the report instead, so only actual high/critical vulnerabilities
-      # fail the build and an unreachable registry is a warning.
+      # `npm audit --audit-level=high` calls the quick-audit endpoint npm is
+      # retiring; it returned a 500 and failed CI on an unrelated pull request.
+      #
+      # The bulk endpoint it replaced is reachable but intermittently times
+      # out: measured locally, two attempts timed out and the next two
+      # returned a full report in 2s and 5s. So the audit is retried rather
+      # than trusted to one call, and npm's fetch defaults are tightened —
+      # fetch-timeout defaults to 300000ms with backoff climbing to 60s, which
+      # is what made a bad call hang CI for five minutes.
+      #
+      # Exit status alone cannot tell a real finding from a registry failure,
+      # so the report is parsed: high and critical fail the build, and only a
+      # registry that stays unreachable across every attempt is a warning.
       - name: Audit dependencies
+        env:
+          npm_config_fetch_timeout: 30000
+          npm_config_fetch_retries: 2
+          npm_config_fetch_retry_mintimeout: 1000
+          npm_config_fetch_retry_maxtimeout: 8000
         run: |
-          set +e
-          report=$(timeout 180 npm audit --json 2>/dev/null)
-          set -e
+          report=''
+          for attempt in 1 2 3 4 5; do
+            report=$(timeout 60 npm audit --json 2>/dev/null || true)
+            if echo "$report" | jq -e 'has("metadata")' > /dev/null 2>&1; then
+              echo "Audit report received on attempt $attempt."
+              break
+            fi
+            echo "Attempt $attempt: no report from the registry."
+            report=''
+            sleep 5
+          done
 
-          if ! echo "$report" | jq -e 'has("metadata")' > /dev/null 2>&1; then
-            echo "::warning::npm audit returned no report (registry error or timeout); skipping"
-            echo "$report" | head -c 500
+          if [ -z "$report" ]; then
+            echo "::warning::npm audit could not reach the registry after 5 attempts; skipping"
             exit 0
           fi
 

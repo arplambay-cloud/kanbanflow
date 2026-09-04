@@ -245,10 +245,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
         <div className="relative" ref={userMenuRef}>
           <button
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-            className={`block rounded-full ring-2 ring-offset-2 ring-offset-white transition-all cursor-pointer focus:outline-none focus-visible:ring-indigo-500 ${
-              isUserMenuOpen
-                ? 'ring-indigo-500'
-                : 'ring-transparent hover:ring-slate-300'
+            className={`block rounded-full transition-opacity cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 ${
+              isUserMenuOpen ? 'opacity-80' : 'hover:opacity-80'
             }`}
             title="Account menu"
             aria-haspopup="menu"
