@@ -18,15 +18,30 @@ const PRIORITY_RANK: Record<Priority, number> = {
 const rank = (p: Priority | undefined) =>
   p && p in PRIORITY_RANK ? PRIORITY_RANK[p] : PRIORITY_RANK.medium;
 
-/** Newer first. Missing/invalid dates sort last rather than throwing off the order. */
-const createdAtDesc = (a: Task, b: Task) => {
-  const at = Date.parse(a.createdAt || '');
-  const bt = Date.parse(b.createdAt || '');
-  if (Number.isNaN(at) && Number.isNaN(bt)) return 0;
-  if (Number.isNaN(at)) return 1;
-  if (Number.isNaN(bt)) return -1;
-  return bt - at;
+/** Parsed timestamp, or null when absent or unparseable. */
+const time = (value: string | undefined) => {
+  const parsed = Date.parse(value || '');
+  return Number.isNaN(parsed) ? null : parsed;
 };
+
+/**
+ * Compare two optional timestamps, putting the missing ones last in both
+ * directions — an undated task should never outrank a dated one.
+ */
+const byTime = (a: number | null, b: number | null, direction: 1 | -1) => {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return (a - b) * direction;
+};
+
+/** Newer first. */
+const createdAtDesc = (a: Task, b: Task) =>
+  byTime(time(a.createdAt), time(b.createdAt), -1);
+
+/** Soonest deadline first; undated tasks sink below every dated one. */
+const dueDateAsc = (a: Task, b: Task) =>
+  byTime(time(a.dueDate), time(b.dueDate), 1);
 
 /**
  * Order the tasks of a single column for display.
@@ -38,8 +53,15 @@ export function sortTasksForColumn(tasks: Task[], mode: BoardSortMode): Task[] {
   const sorted = [...tasks];
 
   if (mode === 'priority') {
-    // Same priority falls back to newest, so a fresh urgent task still leads.
-    sorted.sort((a, b) => rank(b.priority) - rank(a.priority) || createdAtDesc(a, b));
+    // Within a priority the nearer deadline wins — two urgent tasks due in 7
+    // and 10 days should not be separated by when they happened to be typed
+    // in. Undated tasks fall to the bottom of their priority, then newest.
+    sorted.sort(
+      (a, b) =>
+        rank(b.priority) - rank(a.priority) ||
+        dueDateAsc(a, b) ||
+        createdAtDesc(a, b)
+    );
     return sorted;
   }
 

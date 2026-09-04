@@ -6,7 +6,8 @@ function makeTask(
   id: string,
   priority: Priority,
   createdAt: string,
-  order = 0
+  order = 0,
+  dueDate?: string
 ): Task {
   return {
     id,
@@ -16,6 +17,7 @@ function makeTask(
     description: '',
     priority,
     order,
+    dueDate,
     createdAt,
     updatedAt: createdAt,
   };
@@ -50,10 +52,38 @@ describe('sortTasksForColumn', () => {
     ]);
   });
 
-  it('breaks a priority tie with the newest task', () => {
+  it('breaks a priority tie with the nearer due date', () => {
+    // Two urgent tasks, due in 7 and 10 days — the 7-day one leads.
     const tasks = [
-      makeTask('older', 'high', '2026-01-01T00:00:00.000Z'),
-      makeTask('newer', 'high', '2026-06-01T00:00:00.000Z'),
+      makeTask('due-10', 'urgent', '2026-01-01T00:00:00.000Z', 0, '2026-01-11T00:00:00.000Z'),
+      makeTask('due-7', 'urgent', '2026-01-01T00:00:00.000Z', 1, '2026-01-08T00:00:00.000Z'),
+    ];
+    expect(ids(sortTasksForColumn(tasks, 'priority'))).toEqual(['due-7', 'due-10']);
+  });
+
+  it('keeps a higher priority above a sooner deadline', () => {
+    const tasks = [
+      makeTask('high-today', 'high', '2026-01-01T00:00:00.000Z', 0, '2026-01-02T00:00:00.000Z'),
+      makeTask('urgent-later', 'urgent', '2026-01-01T00:00:00.000Z', 1, '2026-06-01T00:00:00.000Z'),
+    ];
+    expect(ids(sortTasksForColumn(tasks, 'priority'))).toEqual([
+      'urgent-later',
+      'high-today',
+    ]);
+  });
+
+  it('sinks an undated task below dated ones of the same priority', () => {
+    const tasks = [
+      makeTask('undated', 'urgent', '2026-06-01T00:00:00.000Z'),
+      makeTask('dated', 'urgent', '2026-01-01T00:00:00.000Z', 0, '2026-02-01T00:00:00.000Z'),
+    ];
+    expect(ids(sortTasksForColumn(tasks, 'priority'))).toEqual(['dated', 'undated']);
+  });
+
+  it('falls back to the newest task when priority and due date both tie', () => {
+    const tasks = [
+      makeTask('older', 'high', '2026-01-01T00:00:00.000Z', 0, '2026-03-01T00:00:00.000Z'),
+      makeTask('newer', 'high', '2026-06-01T00:00:00.000Z', 1, '2026-03-01T00:00:00.000Z'),
     ];
     expect(ids(sortTasksForColumn(tasks, 'priority'))).toEqual(['newer', 'older']);
   });
