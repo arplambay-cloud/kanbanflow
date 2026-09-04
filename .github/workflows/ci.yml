@@ -34,8 +34,32 @@ jobs:
       - name: Build
         run: npm run build
 
+      # `npm audit` exits 1 both for real findings and for registry failures,
+      # and the quick-audit endpoint it uses is being retired — a 500 from npm
+      # failed CI on an unrelated pull request, after hanging for five minutes.
+      # Parse the report instead, so only actual high/critical vulnerabilities
+      # fail the build and an unreachable registry is a warning.
       - name: Audit dependencies
-        run: npm audit --audit-level=high
+        run: |
+          set +e
+          report=$(timeout 180 npm audit --json 2>/dev/null)
+          set -e
+
+          if ! echo "$report" | jq -e 'has("metadata")' > /dev/null 2>&1; then
+            echo "::warning::npm audit returned no report (registry error or timeout); skipping"
+            echo "$report" | head -c 500
+            exit 0
+          fi
+
+          high=$(echo "$report" | jq '.metadata.vulnerabilities.high // 0')
+          critical=$(echo "$report" | jq '.metadata.vulnerabilities.critical // 0')
+          echo "high=$high critical=$critical"
+
+          if [ "$high" -gt 0 ] || [ "$critical" -gt 0 ]; then
+            echo "::error::$critical critical and $high high severity vulnerabilities found"
+            echo "$report" | jq '.vulnerabilities | to_entries[] | select(.value.severity == "high" or .value.severity == "critical") | {name: .key, severity: .value.severity}'
+            exit 1
+          fi
 
       # Guards against the exact regression that shipped in 5999c20: the
       # Cache-Control headers were silently dropped from vercel.json, which

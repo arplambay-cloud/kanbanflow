@@ -12,7 +12,6 @@ import {
   User as UserIcon,
   Settings,
   LogOut,
-  ChevronDown,
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
 import { Notification } from '../../types';
@@ -246,11 +245,17 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
         <div className="relative" ref={userMenuRef}>
           <button
             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-            className="flex items-center gap-2 p-1 pl-1.5 pr-2 rounded-full hover:bg-slate-100 border border-slate-200/80 transition-all focus:outline-none cursor-pointer"
-            title="Account Menu"
+            className={`block rounded-full ring-2 ring-offset-2 ring-offset-white transition-all cursor-pointer focus:outline-none focus-visible:ring-indigo-500 ${
+              isUserMenuOpen
+                ? 'ring-indigo-500'
+                : 'ring-transparent hover:ring-slate-300'
+            }`}
+            title="Account menu"
+            aria-haspopup="menu"
+            aria-expanded={isUserMenuOpen}
+            aria-label="Account menu"
           >
             <UserAvatar user={activeUser} size="sm" />
-            <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {isUserMenuOpen && (
