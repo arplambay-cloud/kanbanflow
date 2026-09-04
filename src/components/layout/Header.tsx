@@ -15,6 +15,8 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
+import { Notification } from '../../types';
+import { resolveNotificationTarget } from '../../utils/notificationTarget';
 import { timeAgo } from '../../utils/date';
 
 interface HeaderProps {
@@ -31,6 +33,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
     activeBoardId,
     currentUser,
     notifications,
+    tasks,
     unreadNotificationCount,
     markNotificationAsRead,
     markAllNotificationsAsRead,
@@ -42,6 +45,18 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Clicking a notification opens the task it refers to. Previously this only
+  // navigated to the board — and did nothing at all when the notification had
+  // no board id, which is what "clicking does nothing" looked like.
+  const handleNotificationClick = (n: Notification) => {
+    markNotificationAsRead(n.id);
+    setIsNotifPopoverOpen(false);
+
+    const { boardId, task, focusComments } = resolveNotificationTarget(n, tasks);
+    if (boardId) navigateToBoard(boardId);
+    if (task) openTaskModal(task, undefined, undefined, focusComments);
+  };
 
   const activeUser = authUser || currentUser;
 
@@ -176,13 +191,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
                   userNotifications.map((n) => (
                     <div
                       key={n.id}
-                      onClick={() => {
-                        markNotificationAsRead(n.id);
-                        if (n.boardId) {
-                          navigateToBoard(n.boardId);
-                          setIsNotifPopoverOpen(false);
-                        }
-                      }}
+                      onClick={() => handleNotificationClick(n)}
                       className={`p-3.5 flex items-start gap-3 hover:bg-slate-50 cursor-pointer transition-colors ${
                         !n.isRead ? 'bg-indigo-50/40' : ''
                       }`}

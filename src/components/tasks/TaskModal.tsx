@@ -51,7 +51,13 @@ export const TaskModal: React.FC = () => {
     deleteAttachment,
   } = useApp();
 
-  const { isOpen, task: modalTask, initialBoardId, initialColumnId } = taskModalState;
+  const {
+    isOpen,
+    task: modalTask,
+    initialBoardId,
+    initialColumnId,
+    focusComments,
+  } = taskModalState;
 
   // Reactively lookup live task from global state so comments/attachments/status reflect immediately
   const task = modalTask ? tasks.find((t) => t.id === modalTask.id) || modalTask : null;
@@ -79,6 +85,18 @@ export const TaskModal: React.FC = () => {
 
   // Attachment file input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const commentsRef = useRef<HTMLDivElement>(null);
+
+  // A comment notification should land on the thread. Without this the modal
+  // opens scrolled to the title and the comment you clicked through for is
+  // off-screen. rAF waits for the modal's own layout before measuring.
+  useEffect(() => {
+    if (!isOpen || !focusComments) return;
+    const frame = requestAnimationFrame(() => {
+      commentsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [isOpen, focusComments, modalTask?.id]);
 
   // Synchronize modal state on open or change
   useEffect(() => {
@@ -554,7 +572,10 @@ export const TaskModal: React.FC = () => {
                 </div>
 
                 {/* Comments Section */}
-                <div className="flex-1 flex flex-col min-h-[260px] max-h-[380px] bg-slate-50 border border-slate-200/80 rounded-xl p-3.5">
+                <div
+                  ref={commentsRef}
+                  className="flex-1 flex flex-col min-h-[260px] max-h-[380px] bg-slate-50 border border-slate-200/80 rounded-xl p-3.5"
+                >
                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/80">
                     <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                       <MessageSquare className="w-3.5 h-3.5 text-indigo-600" />

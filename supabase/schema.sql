@@ -150,9 +150,15 @@ create table if not exists public.boards (
   title text not null,
   description text default '',
   color text default '#4f46e5',
+  sort_mode text not null default 'manual',
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- `create table if not exists` never alters a deployed table, so columns added
+-- after the first deploy must also be applied here. See migrations/.
+alter table public.boards
+  add column if not exists sort_mode text not null default 'manual';
 
 -- ------------------------------------------------------------------------------
 -- 6. COLUMNS TABLE
