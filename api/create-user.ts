@@ -208,7 +208,19 @@ export default async function handler(req: any, res: any) {
       });
     } else {
       // Send official Supabase invitation email
-      const siteUrl = process.env.PUBLIC_SITE_URL || 'https://kanban.theumair07.com';
+      // Fall back to the deployment's own origin rather than a hard-coded host:
+      // a fork that has not set PUBLIC_SITE_URL would otherwise mail its invitees
+      // a link to somebody else's copy of the app.
+      const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '';
+      const requestOrigin = req.headers.origin || (req.headers.host ? `https://${req.headers.host}` : '');
+      const siteUrl = process.env.PUBLIC_SITE_URL || vercelUrl || requestOrigin;
+
+      if (!siteUrl) {
+        return res.status(500).json({
+          error: 'Cannot determine the site URL for the invitation link. Set PUBLIC_SITE_URL.',
+        });
+      }
+
       const redirectUrl = `${siteUrl}/set-password`;
 
       const { data: inviteData, error: inviteErr } =

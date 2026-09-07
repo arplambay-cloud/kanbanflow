@@ -319,6 +319,13 @@ alter table public.task_attachments
 -- The deployed `uploaded_by` column is NOT NULL with no default, but the client
 -- does not send it, so every attachment insert failed a not-null violation.
 -- Relax it and default it to the caller's display identity.
+--
+-- `add column if not exists` first: the column only exists on databases created
+-- before it was dropped from the CREATE TABLE above, so on a fresh deploy the
+-- two ALTERs below would abort with `column "uploaded_by" does not exist` and
+-- take the rest of this file down with them.
+alter table public.task_attachments
+  add column if not exists uploaded_by text;
 alter table public.task_attachments
   alter column uploaded_by drop not null;
 alter table public.task_attachments
