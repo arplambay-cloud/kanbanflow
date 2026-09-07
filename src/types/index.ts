@@ -122,6 +122,13 @@ export interface Workspace {
   description: string;
   accentColor: string;
   createdAt: string;
+  /**
+   * When the one-time setup wizard was completed for this workspace, or null
+   * if it never has been. Server-side and shared by everyone in the workspace:
+   * an invited admin must not be walked through setup again on their own
+   * machine, because finishing it rewrites the workspace's own settings.
+   */
+  onboardedAt: string | null;
 }
 
 export type ActivePage = 'dashboard' | 'boards' | 'board-detail' | 'tasks' | 'clients' | 'notifications' | 'users' | 'profile' | 'settings';

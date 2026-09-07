@@ -8,6 +8,7 @@ export const initialWorkspace: Workspace = {
   description: 'Collaborative team workspace for managing projects and tasks.',
   accentColor: '#4f46e5',
   createdAt: new Date().toISOString(),
+  onboardedAt: null,
 };
 
 export const initialBoards: Board[] = [];

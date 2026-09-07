@@ -346,6 +346,13 @@ alter table public.boards alter column workspace_id set default 'ws-default';
 alter table public.workspaces
   add column if not exists accent_color text default '#4f46e5';
 
+-- Whether the one-time setup wizard has been completed for this workspace.
+-- Tracked here rather than in each browser's localStorage so that an invited
+-- admin does not get walked through it again — and overwrite the workspace
+-- name/description/colour the team already chose. See migrations/.
+alter table public.workspaces
+  add column if not exists onboarded_at timestamp with time zone;
+
 alter table public.activity_logs
   add column if not exists workspace_id text
   references public.workspaces(id) on delete cascade default 'ws-default';

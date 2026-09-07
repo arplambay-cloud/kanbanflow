@@ -100,6 +100,9 @@ interface AppContextType {
   closeTaskModal: () => void;
   refreshRemoteData: () => Promise<void>;
   isLoadingRemote: boolean;
+  /** False until the first remote fetch has settled, so callers can tell
+   *  "not loaded yet" apart from "loaded, and the value really is empty". */
+  hasLoadedRemote: boolean;
   setIsDragging: (isDragging: boolean) => void;
 }
 
@@ -150,6 +153,7 @@ const generateRandomSlug = (length = 8): string => {
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user: authUser, deleteMember } = useAuth();
   const [isLoadingRemote, setIsLoadingRemote] = useState(false);
+  const [hasLoadedRemote, setHasLoadedRemote] = useState(false);
 
   // In-flight local write timestamp & dragging state references
   const localWriteTimestampRef = useRef<number>(0);
@@ -269,7 +273,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Fetch Remote Workspace Data
   const fetchRemoteWorkspaceData = useCallback(async () => {
-    if (!isSupabaseConfigured || !supabase || !authUser?.id) return;
+    if (!isSupabaseConfigured || !supabase || !authUser?.id) {
+      // Nothing to wait for in local-only mode; whatever is in state is final.
+      setHasLoadedRemote(true);
+      return;
+    }
 
     try {
       setIsLoadingRemote(true);
@@ -314,6 +322,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           description: ws.description || '',
           accentColor: ws.accent_color || '#4f46e5',
           createdAt: ws.created_at,
+          onboardedAt: ws.onboarded_at ?? null,
         };
         setWorkspace(mappedWorkspace);
         safeStorageSave(LOCAL_STORAGE_KEYS.WORKSPACE, mappedWorkspace);
@@ -522,6 +531,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       console.warn('Error fetching workspace data from Supabase:', err);
     } finally {
       setIsLoadingRemote(false);
+      setHasLoadedRemote(true);
     }
   }, [authUser]);
 
@@ -619,6 +629,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             name: partial.name !== undefined ? partial.name : workspace.name,
             description: partial.description !== undefined ? partial.description : workspace.description,
             accent_color: partial.accentColor !== undefined ? partial.accentColor : workspace.accentColor,
+            onboarded_at: partial.onboardedAt !== undefined ? partial.onboardedAt : workspace.onboardedAt,
             updated_at: new Date().toISOString(),
           })
           .eq('id', workspace.id || 'ws-default');
@@ -1688,6 +1699,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         closeTaskModal,
         refreshRemoteData: fetchRemoteWorkspaceData,
         isLoadingRemote,
+        hasLoadedRemote,
         setIsDragging,
       }}
     >

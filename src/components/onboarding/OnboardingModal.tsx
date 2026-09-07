@@ -25,7 +25,8 @@ interface MemberInvite {
 }
 
 export const OnboardingModal: React.FC = () => {
-  const { workspace, updateWorkspace, addUser, createBoard, boards } = useApp();
+  const { workspace, updateWorkspace, addUser, createBoard, boards, hasLoadedRemote } =
+    useApp();
   const { user: authUser, inviteMember } = useAuth();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -46,24 +47,34 @@ export const OnboardingModal: React.FC = () => {
   const [boardTitle, setBoardTitle] = useState('Main Project Board');
   const [boardDesc, setBoardDesc] = useState('Central agile Kanban board for task tracking.');
 
-  const ONBOARDING_KEY = 'kf_onboarding_completed_v3';
-
   useEffect(() => {
-    // Open onboarding if user is logged in as admin and onboarding flag not present
-    const completed = localStorage.getItem(ONBOARDING_KEY);
-    if (!completed && authUser) {
-      if (authUser.role === 'member') {
-        // Members enter the workspace directly without re-configuring it
-        localStorage.setItem(ONBOARDING_KEY, 'true');
-        return;
-      }
-      setIsOpen(true);
-      if (authUser.name && authUser.name !== 'User') {
-        const firstName = authUser.name.split(' ')[0];
-        setWorkspaceName(`${firstName}'s Workspace`);
-      }
+    // Whether setup has happened is a property of the workspace, not of this
+    // browser. It used to be a localStorage flag, which meant every invited
+    // admin was walked through setup on their first login and, on finishing,
+    // overwrote the team's workspace name, description and colour with the
+    // wizard's defaults.
+    if (!authUser) return;
+
+    // Wait for the real workspace before deciding: until the first fetch
+    // settles, `workspace` is the seeded placeholder and its onboardedAt is
+    // null for everyone, which would flash the wizard at an existing team.
+    if (!hasLoadedRemote) return;
+
+    if (workspace.onboardedAt) {
+      // Already set up — including by another admin while this tab was open.
+      setIsOpen(false);
+      return;
     }
-  }, [authUser]);
+
+    // Only admins configure the workspace; members go straight in.
+    if (authUser.role !== 'admin') return;
+
+    setIsOpen(true);
+    if (authUser.name && authUser.name !== 'User') {
+      const firstName = authUser.name.split(' ')[0];
+      setWorkspaceName(`${firstName}'s Workspace`);
+    }
+  }, [authUser, hasLoadedRemote, workspace.onboardedAt]);
 
   if (!isOpen) return null;
 
@@ -82,11 +93,13 @@ export const OnboardingModal: React.FC = () => {
   };
 
   const handleFinishOnboarding = async (skipInvites = false) => {
-    // 1. Update workspace
+    // 1. Update workspace, and record that setup is done in the same write so
+    //    no other admin is ever shown this wizard again.
     updateWorkspace({
       name: workspaceName.trim() || 'My Workspace',
       description: workspaceDesc.trim(),
       accentColor,
+      onboardedAt: new Date().toISOString(),
     });
 
     // 2. Send Invites if not skipped
@@ -120,8 +133,6 @@ export const OnboardingModal: React.FC = () => {
       createBoard(boardTitle.trim() || 'Main Project Board', boardDesc.trim(), accentColor);
     }
 
-    // 5. Mark onboarding complete
-    localStorage.setItem(ONBOARDING_KEY, 'true');
     setIsOpen(false);
   };
 
