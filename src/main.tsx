@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import { AppProvider } from './context/AppContext';
+import { ChatProvider } from './context/ChatContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import './index.css';
 
@@ -13,7 +14,9 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
       <BrowserRouter>
         <AuthProvider>
           <AppProvider>
-            <App />
+            <ChatProvider>
+              <App />
+            </ChatProvider>
           </AppProvider>
         </AuthProvider>
       </BrowserRouter>

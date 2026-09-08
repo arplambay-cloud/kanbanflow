@@ -5,7 +5,7 @@ import {
   LayoutDashboard,
   Kanban,
   CheckSquare,
-  Briefcase,
+  MessageSquare,
   Bell,
   Users,
   User as UserIcon,
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { UserAvatar } from '../common/UserAvatar';
 import { useAuth } from '../../context/AuthContext';
+import { useChat } from '../../context/ChatContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { signOut, user: authUser } = useAuth();
+  const { totalUnread: unreadMessageCount } = useChat();
   const {
     workspace,
     activePage,
@@ -49,7 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'boards', label: 'Boards', icon: Kanban },
     { id: 'tasks', label: 'Tasks', icon: CheckSquare },
-    { id: 'clients', label: 'Clients', icon: Briefcase },
+    { id: 'chat', label: 'Chat', icon: MessageSquare, badge: unreadMessageCount },
     {
       id: 'notifications',
       label: 'Notifications',

@@ -44,7 +44,6 @@ export interface Task {
   columnId: string;
   title: string;
   description: string;
-  clientId?: string;
   assigneeId?: string;
   dueDate?: string; // ISO date string YYYY-MM-DD
   priority: Priority;
@@ -60,15 +59,6 @@ export interface Column {
   boardId: string;
   title: string;
   order: number;
-}
-
-/** A client the work is being done for. Tasks optionally belong to one. */
-export interface Client {
-  id: string;
-  name: string;
-  color: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface Board {
@@ -131,4 +121,28 @@ export interface Workspace {
   onboardedAt: string | null;
 }
 
-export type ActivePage = 'dashboard' | 'boards' | 'board-detail' | 'tasks' | 'clients' | 'notifications' | 'users' | 'profile' | 'settings';
+export type ChatChannelKind = 'group' | 'dm';
+
+export interface ChatChannel {
+  id: string;
+  kind: ChatChannelKind;
+  /** Display name; set for groups, null for DMs (which take the other person's name). */
+  name: string | null;
+  /** The two participants of a DM, sorted; both null for a group. */
+  dmUserA: string | null;
+  dmUserB: string | null;
+  createdAt: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  channelId: string;
+  /** Null once the author's account has been deleted. */
+  senderId: string | null;
+  content: string;
+  createdAt: string;
+  /** Sent from this tab and not yet confirmed by the server. */
+  pending?: boolean;
+}
+
+export type ActivePage = 'dashboard' | 'boards' | 'board-detail' | 'tasks' | 'chat' | 'notifications' | 'users' | 'profile' | 'settings';

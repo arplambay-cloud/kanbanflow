@@ -85,6 +85,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
         return activeBoard?.title || 'Board';
       case 'tasks':
         return 'All Tasks';
+      case 'chat':
+        return 'Team Chat';
       case 'notifications':
         return 'Notifications';
       case 'users':

@@ -10,7 +10,6 @@ import {
   Notification,
   ActivityLog,
   Workspace,
-  Client,
   ActivePage,
   Priority,
 } from '../types';
@@ -49,10 +48,6 @@ interface AppContextType {
   addUser: (user: Omit<User, 'id'>) => void;
   updateUser: (id: string, updates: Partial<User>) => void;
   deleteUser: (id: string) => void;
-  clients: Client[];
-  createClient: (name: string, color?: string) => string;
-  updateClient: (id: string, partial: Partial<Client>) => void;
-  deleteClient: (id: string) => void;
   boards: Board[];
   activeBoardId: string | null;
   setActiveBoardId: (id: string | null) => void;
@@ -70,7 +65,6 @@ interface AppContextType {
     title: string;
     description: string;
     assigneeId?: string;
-    clientId?: string;
     dueDate?: string;
     priority: Priority;
   }) => Task;
@@ -112,7 +106,6 @@ const LOCAL_STORAGE_KEYS = {
   WORKSPACE: 'kf_workspace_v4',
   USERS: 'kf_users_v4',
   CURRENT_USER_ID: 'kf_current_user_id_v4',
-  CLIENTS: 'kf_clients_v4',
   BOARDS: 'kf_boards_v4',
   COLUMNS: 'kf_columns_v4',
   TASKS: 'kf_tasks_v4',
@@ -185,10 +178,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     safeStorageLoad(LOCAL_STORAGE_KEYS.CURRENT_USER_ID, authUser?.id || initialUsers[0]?.id || '')
   );
 
-  const [clients, setClients] = useState<Client[]>(() =>
-    safeStorageLoad(LOCAL_STORAGE_KEYS.CLIENTS, [] as Client[])
-  );
-
   const [boards, setBoards] = useState<Board[]>(() =>
     safeStorageLoad(LOCAL_STORAGE_KEYS.BOARDS, initialBoards)
   );
@@ -227,8 +216,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (cleanPath === '/tasks') {
       return { activePage: 'tasks', activeBoardId: null };
     }
-    if (cleanPath === '/clients') {
-      return { activePage: 'clients', activeBoardId: null };
+    if (cleanPath === '/chat' || cleanPath.startsWith('/chat/')) {
+      return { activePage: 'chat', activeBoardId: null };
     }
     if (cleanPath === '/notifications') {
       return { activePage: 'notifications', activeBoardId: null };
@@ -333,25 +322,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           description: 'Collaborative team workspace for managing projects and tasks.',
           accent_color: '#4f46e5',
         });
-      }
-
-      // 2b. Clients
-      const { data: dbClients } = await supabase
-        .from('clients')
-        .select('*')
-        .order('name', { ascending: true });
-
-      if (dbClients) {
-        const mappedClients: Client[] = dbClients.map(
-          (c: { id: string; name: string; color?: string; created_at: string; updated_at?: string }) => ({
-          id: c.id,
-          name: c.name,
-          color: c.color || '#7c3bed',
-          createdAt: c.created_at,
-          updatedAt: c.updated_at || c.created_at,
-        }));
-        setClients(mappedClients);
-        safeStorageSave(LOCAL_STORAGE_KEYS.CLIENTS, mappedClients);
       }
 
       // 3. Boards
@@ -463,7 +433,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           title: t.title,
           description: t.description || '',
           assigneeId: t.assignee_id || undefined,
-          clientId: t.client_id || undefined,
           dueDate: t.due_date || undefined,
           priority: (t.priority as Priority) || 'medium',
           order: t.order || 0,
@@ -594,10 +563,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [workspace]);
 
   useEffect(() => {
-    safeStorageSave(LOCAL_STORAGE_KEYS.CLIENTS, clients);
-  }, [clients]);
-
-  useEffect(() => {
     safeStorageSave(LOCAL_STORAGE_KEYS.BOARDS, boards);
   }, [boards]);
 
@@ -723,86 +688,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const { error } = await supabase.storage.from(bucket).remove(unique);
     if (error) console.warn('Could not delete ' + bucket + ' objects:', error.message);
   };
-  // Client Actions
-  const createClient = (name: string, color = '#7c3bed'): string => {
-    markLocalWrite();
-    const id = 'client-' + Date.now() + '-' + generateRandomSlug(4);
-    const now = new Date().toISOString();
-    const newClient: Client = { id, name, color, createdAt: now, updatedAt: now };
-
-    setClients((prev) => [...prev, newClient].sort((a, b) => a.name.localeCompare(b.name)));
-
-    if (isSupabaseConfigured && supabase) {
-      const client = supabase;
-      (async () => {
-        try {
-          const { error: writeError } = await client.from('clients').insert({
-            id,
-            workspace_id: workspace.id || 'ws-default',
-            name,
-            color,
-          });
-          if (writeError) throw writeError;
-        } catch (err) {
-          console.warn('Supabase createClient error:', err);
-          notifySyncFailure('The new client', err);
-        }
-      })();
-    }
-
-    return id;
-  };
-
-  const updateClient = (id: string, partial: Partial<Client>) => {
-    markLocalWrite();
-    setClients((prev) =>
-      prev
-        .map((c) => (c.id === id ? { ...c, ...partial, updatedAt: new Date().toISOString() } : c))
-        .sort((a, b) => a.name.localeCompare(b.name))
-    );
-
-    if (isSupabaseConfigured && supabase) {
-      const client = supabase;
-      (async () => {
-        try {
-          const dbUpdates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-          if (partial.name !== undefined) dbUpdates.name = partial.name;
-          if (partial.color !== undefined) dbUpdates.color = partial.color;
-          const { error: writeError } = await client.from('clients').update(dbUpdates).eq('id', id);
-          if (writeError) throw writeError;
-        } catch (err) {
-          console.warn('Supabase updateClient error:', err);
-          notifySyncFailure('Client changes', err);
-        }
-      })();
-    }
-  };
-
-  /**
-   * Remove a client. Tasks keep their history: the foreign key is ON DELETE
-   * SET NULL, so their work simply becomes unassigned rather than vanishing.
-   */
-  const deleteClient = (id: string) => {
-    markLocalWrite();
-    setClients((prev) => prev.filter((c) => c.id !== id));
-    setTasks((prev) =>
-      prev.map((t) => (t.clientId === id ? { ...t, clientId: undefined } : t))
-    );
-
-    if (isSupabaseConfigured && supabase) {
-      const client = supabase;
-      (async () => {
-        try {
-          const { error: writeError } = await client.from('clients').delete().eq('id', id);
-          if (writeError) throw writeError;
-        } catch (err) {
-          console.warn('Supabase deleteClient error:', err);
-          notifySyncFailure('Deleting the client', err);
-        }
-      })();
-    }
-  };
-
   // Board Actions
   const createBoard = (title: string, description = '', color = '#4f46e5'): string => {
     markLocalWrite();
@@ -1030,7 +915,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     title: string;
     description: string;
     assigneeId?: string;
-    clientId?: string;
     dueDate?: string;
     priority: Priority;
   }): Task => {
@@ -1067,7 +951,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             priority: data.priority || 'medium',
             due_date: data.dueDate || null,
             assignee_id: data.assigneeId || null,
-            client_id: data.clientId || null,
             order: topOrder,
           });
             if (writeError) throw writeError;
@@ -1141,7 +1024,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           // board_id — so the task rendered on a board whose columns did not
           // include it, and disappeared from the UI entirely.
           if (updates.boardId !== undefined) dbUpdates.board_id = updates.boardId;
-          if (updates.clientId !== undefined) dbUpdates.client_id = updates.clientId || null;
           if (updates.columnId !== undefined) dbUpdates.column_id = updates.columnId;
           if (updates.order !== undefined) dbUpdates.order = updates.order;
           if (updates.assigneeId !== undefined) {
@@ -1235,7 +1117,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               priority: t.priority || 'medium',
               due_date: t.dueDate || null,
               assignee_id: t.assigneeId || null,
-              client_id: t.clientId || null,
               order: t.order,
               updated_at: t.updatedAt,
             })),
@@ -1611,8 +1492,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       case 'tasks':
         navigate('/tasks');
         break;
-      case 'clients':
-        navigate('/clients');
+      case 'chat':
+        navigate('/chat');
         break;
       case 'notifications':
         navigate('/notifications');
@@ -1662,10 +1543,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addUser,
         updateUser,
         deleteUser,
-        clients,
-        createClient,
-        updateClient,
-        deleteClient,
         boards,
         activeBoardId,
         setActiveBoardId,

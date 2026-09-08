@@ -7,7 +7,7 @@ import { DashboardView } from './components/dashboard/DashboardView';
 import { BoardsView } from './components/boards/BoardsView';
 import { BoardDetailView } from './components/boards/BoardDetailView';
 import { TaskListView } from './components/tasks/TaskListView';
-import { ClientsView } from './components/clients/ClientsView';
+import { ChatView } from './components/chat/ChatView';
 import { NotificationsView } from './components/notifications/NotificationsView';
 import { UsersView } from './components/users/UsersView';
 import { ProfileView } from './components/profile/ProfileView';
@@ -129,7 +129,8 @@ export const AppContent: React.FC = () => {
               <Route path="/boards" element={<BoardsView />} />
               <Route path="/boards/:boardId" element={<BoardDetailView />} />
               <Route path="/tasks" element={<TaskListView />} />
-              <Route path="/clients" element={<ClientsView />} />
+              <Route path="/chat" element={<ChatView />} />
+              <Route path="/chat/:channelId" element={<ChatView />} />
               <Route path="/notifications" element={<NotificationsView />} />
               <Route
                 path="/users"

@@ -41,7 +41,7 @@ export function formatDate(dateString?: string): string {
       day: 'numeric',
       year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined,
     });
-  } catch (e) {
+  } catch {
     return dateString;
   }
 }
@@ -69,7 +69,7 @@ export function timeAgo(dateString: string): string {
     const days = Math.floor(hours / 24);
     if (days < 30) return `${days}d ago`;
     return formatDate(dateString);
-  } catch (e) {
+  } catch {
     return 'recently';
   }
 }
