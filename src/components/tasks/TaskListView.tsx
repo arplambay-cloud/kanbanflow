@@ -343,12 +343,12 @@ export const TaskListView: React.FC = () => {
                       {/* Assignee */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         {assignee ? (
-                          <div className="flex items-center gap-2">
-                            <UserAvatar user={assignee} size="xs" />
-                            <span className="text-xs font-medium text-slate-700">
-                              {assignee.name}
-                            </span>
-                          </div>
+                          <span
+                            className="inline-flex items-center"
+                            title={assignee.name}
+                          >
+                            <UserAvatar user={assignee} size="sm" />
+                          </span>
                         ) : (
                           <span className="text-xs text-slate-400 italic">
                             Unassigned
