@@ -1,4 +1,4 @@
-import { ChatChannel, ChatMessage } from '../types';
+import { ChatChannel, ChatMessage, ChatReaction } from '../types';
 
 /** The one channel every workspace member shares. Seeded by the schema. */
 export const GENERAL_CHANNEL_ID = 'general';
@@ -29,6 +29,45 @@ export function dmPartnerId(
   if (channel.dmUserA === viewerId) return channel.dmUserB;
   if (channel.dmUserB === viewerId) return channel.dmUserA;
   return null;
+}
+
+/** The reactions offered in the message menu. */
+export const REACTION_EMOJIS = ['👍', '❤️', '😂', '🎉', '👀', '🙏', '✅', '🔥'] as const;
+
+export interface ReactionSummary {
+  emoji: string;
+  count: number;
+  userIds: string[];
+  /** Whether the viewer is among the reactors. */
+  mine: boolean;
+}
+
+/** Collapse raw (user, emoji) pairs into one pill per emoji, in first-seen order. */
+export function summarizeReactions(reactions: ChatReaction[], viewerId: string): ReactionSummary[] {
+  const byEmoji = new Map<string, ReactionSummary>();
+  for (const r of reactions) {
+    let summary = byEmoji.get(r.emoji);
+    if (!summary) {
+      summary = { emoji: r.emoji, count: 0, userIds: [], mine: false };
+      byEmoji.set(r.emoji, summary);
+    }
+    if (summary.userIds.includes(r.userId)) continue;
+    summary.userIds.push(r.userId);
+    summary.count += 1;
+    if (r.userId === viewerId) summary.mine = true;
+  }
+  return [...byEmoji.values()];
+}
+
+/** Add `viewerId`'s reaction if absent, otherwise remove it. */
+export function toggleReactionIn(
+  reactions: ChatReaction[],
+  viewerId: string,
+  emoji: string
+): { next: ChatReaction[]; added: boolean } {
+  const isOurs = (r: ChatReaction) => r.userId === viewerId && r.emoji === emoji;
+  if (reactions.some(isOurs)) return { next: reactions.filter((r) => !isOurs(r)), added: false };
+  return { next: [...reactions, { userId: viewerId, emoji }], added: true };
 }
 
 /** A unique id for a message sent from this tab. */

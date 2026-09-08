@@ -134,6 +134,11 @@ export interface ChatChannel {
   createdAt: string;
 }
 
+export interface ChatReaction {
+  userId: string;
+  emoji: string;
+}
+
 export interface ChatMessage {
   id: string;
   channelId: string;
@@ -141,6 +146,9 @@ export interface ChatMessage {
   senderId: string | null;
   content: string;
   createdAt: string;
+  /** Set (by the database) when the author changed the text after sending. */
+  editedAt: string | null;
+  reactions: ChatReaction[];
   /** Sent from this tab and not yet confirmed by the server. */
   pending?: boolean;
 }

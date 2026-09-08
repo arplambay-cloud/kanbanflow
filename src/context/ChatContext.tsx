@@ -10,8 +10,8 @@ import React, {
 } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { useAuth } from './AuthContext';
-import { ChatChannel, ChatMessage } from '../types';
-import { dmChannelId, dmPair, newMessageId } from '../utils/chat';
+import { ChatChannel, ChatMessage, ChatReaction } from '../types';
+import { dmChannelId, dmPair, newMessageId, toggleReactionIn } from '../utils/chat';
 import { notifyError, notifySyncFailure } from '../utils/toast';
 
 interface ChatContextType {
@@ -26,7 +26,13 @@ interface ChatContextType {
   /** Open (creating if needed) the DM with `userId`; resolves to its channel id. */
   openDirectMessage: (userId: string) => Promise<string | null>;
   sendMessage: (channelId: string, content: string) => Promise<void>;
+  /** Change the text of your own message. */
+  editMessage: (channelId: string, messageId: string, content: string) => Promise<void>;
+  /** Remove a message for everyone — the author's or, for admins, anyone's. */
   deleteMessage: (channelId: string, messageId: string) => Promise<void>;
+  /** Remove a message from your own view only. */
+  hideMessage: (channelId: string, messageId: string) => Promise<void>;
+  toggleReaction: (channelId: string, messageId: string, emoji: string) => Promise<void>;
   markChannelRead: (channelId: string) => void;
   hasLoadedChannels: boolean;
   loadingChannelIds: Record<string, boolean>;
@@ -48,12 +54,20 @@ interface ChannelRow {
   created_at: string;
 }
 
+interface ReactionRow {
+  user_id: string;
+  emoji: string;
+}
+
 interface MessageRow {
   id: string;
   channel_id: string;
   sender_id: string | null;
   content: string;
   created_at: string;
+  edited_at?: string | null;
+  /** Present when the query embedded the reactions; absent on realtime payloads. */
+  chat_reactions?: ReactionRow[];
 }
 
 const mapChannel = (c: ChannelRow): ChatChannel => ({
@@ -71,24 +85,54 @@ const mapMessage = (m: MessageRow): ChatMessage => ({
   senderId: m.sender_id,
   content: m.content,
   createdAt: m.created_at,
+  editedAt: m.edited_at ?? null,
+  reactions: (m.chat_reactions ?? []).map((r) => ({ userId: r.user_id, emoji: r.emoji })),
 });
 
 /**
  * Insert `message` into an ascending thread. A message with the same id — the
- * server's copy of one we sent optimistically — replaces the local one.
+ * server's copy of one we sent optimistically — replaces the local one, but
+ * keeps reactions already held locally when the incoming copy carries none
+ * (realtime payloads never embed them).
  */
 const upsertIntoThread = (thread: ChatMessage[] | undefined, message: ChatMessage): ChatMessage[] => {
   const existing = thread ?? [];
   const idx = existing.findIndex((m) => m.id === message.id);
   if (idx >= 0) {
     const next = existing.slice();
-    next[idx] = message;
+    const prior = existing[idx];
+    next[idx] = {
+      ...message,
+      reactions: message.reactions.length > 0 ? message.reactions : prior.reactions,
+    };
     return next;
   }
   // Realtime can deliver slightly out of order; keep the thread sorted.
   const next = [...existing, message];
   next.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   return next;
+};
+
+/** Apply `update` to one message wherever it lives among the loaded threads. */
+const patchMessage = (
+  threads: Record<string, ChatMessage[]>,
+  messageId: string,
+  update: (m: ChatMessage) => ChatMessage
+): Record<string, ChatMessage[]> => {
+  let changed = false;
+  const next: Record<string, ChatMessage[]> = {};
+  for (const [channelId, thread] of Object.entries(threads)) {
+    const idx = thread.findIndex((m) => m.id === messageId);
+    if (idx < 0) {
+      next[channelId] = thread;
+      continue;
+    }
+    const copy = thread.slice();
+    copy[idx] = update(thread[idx]);
+    next[channelId] = copy;
+    changed = true;
+  }
+  return changed ? next : threads;
 };
 
 export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -108,6 +152,9 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const activeChannelIdRef = useRef<string | null>(null);
   const channelIdsRef = useRef<Set<string>>(new Set());
   const loadedThreadsRef = useRef<Set<string>>(new Set());
+  // Messages this user removed from their own view. Filtered on load and on
+  // arrival, and never sent back to the server as anything but a hide row.
+  const hiddenIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     activeChannelIdRef.current = activeChannelId;
@@ -144,6 +191,18 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUnreadByChannel(next);
   }, [userId]);
 
+  const loadHiddenMessages = useCallback(async () => {
+    if (!supabase || !userId) return;
+    const { data, error } = await supabase.from('chat_hidden_messages').select('message_id');
+    if (error) {
+      console.warn('Chat: could not load hidden messages:', error.message);
+      return;
+    }
+    hiddenIdsRef.current = new Set(
+      ((data ?? []) as { message_id: string }[]).map((r) => r.message_id)
+    );
+  }, [userId]);
+
   const loadThread = useCallback(
     async (channelId: string) => {
       if (!supabase || !userId) return;
@@ -153,12 +212,15 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         const { data, error } = await supabase
           .from('chat_messages')
-          .select('*')
+          .select('*, chat_reactions(user_id, emoji)')
           .eq('channel_id', channelId)
           .order('created_at', { ascending: false })
           .limit(THREAD_PAGE_SIZE);
         if (error) throw error;
-        const fetched = ((data ?? []) as MessageRow[]).map(mapMessage).reverse();
+        const fetched = ((data ?? []) as MessageRow[])
+          .map(mapMessage)
+          .filter((m) => !hiddenIdsRef.current.has(m.id))
+          .reverse();
         setMessagesByChannel((prev) => {
           // Keep anything that arrived over realtime, or was sent, while the fetch was in flight.
           let thread = fetched;
@@ -204,17 +266,20 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setActiveChannelId(null);
       setHasLoadedChannels(false);
       loadedThreadsRef.current = new Set();
+      hiddenIdsRef.current = new Set();
       return;
     }
     let cancelled = false;
     (async () => {
+      // Hidden ids must be known before any thread is filtered against them.
+      await loadHiddenMessages();
       await Promise.all([loadChannels(), loadUnreadCounts()]);
       if (!cancelled) setHasLoadedChannels(true);
     })();
     return () => {
       cancelled = true;
     };
-  }, [isChatAvailable, userId, loadChannels, loadUnreadCounts]);
+  }, [isChatAvailable, userId, loadChannels, loadUnreadCounts, loadHiddenMessages]);
 
   // Live updates. RLS applies to these events too, so a DM between two other
   // people never reaches this client.
@@ -257,6 +322,20 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       )
       .on(
         'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'chat_messages' },
+        (payload) => {
+          const row = payload.new as MessageRow;
+          setMessagesByChannel((prev) =>
+            patchMessage(prev, row.id, (m) => ({
+              ...m,
+              content: row.content,
+              editedAt: row.edited_at ?? m.editedAt,
+            }))
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'chat_messages' },
         (payload) => {
           const id = (payload.old as { id?: string } | null)?.id;
@@ -271,6 +350,38 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
             return changed ? next : prev;
           });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'chat_reactions' },
+        (payload) => {
+          const row = payload.new as { message_id: string; user_id: string; emoji: string };
+          const reaction: ChatReaction = { userId: row.user_id, emoji: row.emoji };
+          setMessagesByChannel((prev) =>
+            patchMessage(prev, row.message_id, (m) =>
+              m.reactions.some((r) => r.userId === reaction.userId && r.emoji === reaction.emoji)
+                ? m
+                : { ...m, reactions: [...m.reactions, reaction] }
+            )
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'chat_reactions' },
+        (payload) => {
+          // Only the primary key survives on a delete payload — which is exactly the reaction.
+          const row = payload.old as { message_id?: string; user_id?: string; emoji?: string };
+          if (!row.message_id || !row.user_id || !row.emoji) return;
+          setMessagesByChannel((prev) =>
+            patchMessage(prev, row.message_id as string, (m) => ({
+              ...m,
+              reactions: m.reactions.filter(
+                (r) => !(r.userId === row.user_id && r.emoji === row.emoji)
+              ),
+            }))
+          );
         }
       )
       .on(
@@ -347,6 +458,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         senderId: userId,
         content: trimmed,
         createdAt: new Date().toISOString(),
+        editedAt: null,
+        reactions: [],
         pending: true,
       };
       setMessagesByChannel((prev) => ({
@@ -382,6 +495,42 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     [userId, markChannelRead]
   );
 
+  const editMessage = useCallback(
+    async (channelId: string, messageId: string, content: string) => {
+      const trimmed = content.trim();
+      const original = (messagesByChannel[channelId] ?? []).find((m) => m.id === messageId);
+      if (!trimmed || !original || original.content === trimmed) return;
+
+      setMessagesByChannel((prev) =>
+        patchMessage(prev, messageId, (m) => ({
+          ...m,
+          content: trimmed,
+          editedAt: new Date().toISOString(),
+        }))
+      );
+      if (!supabase) return;
+
+      // RLS turns a forbidden update into a silent no-op, so confirm a row changed.
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .update({ content: trimmed })
+        .eq('id', messageId)
+        .select('id');
+      if (error || !data || data.length === 0) {
+        setMessagesByChannel((prev) =>
+          patchMessage(prev, messageId, (m) => ({
+            ...m,
+            content: original.content,
+            editedAt: original.editedAt,
+          }))
+        );
+        if (error) notifySyncFailure('Your edit', error);
+        else notifyError('Only the author can edit a message.');
+      }
+    },
+    [messagesByChannel]
+  );
+
   const deleteMessage = useCallback(
     async (channelId: string, messageId: string) => {
       const removed = (messagesByChannel[channelId] ?? []).find((m) => m.id === messageId);
@@ -412,6 +561,70 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     [messagesByChannel]
   );
 
+  const hideMessage = useCallback(
+    async (channelId: string, messageId: string) => {
+      if (!userId) return;
+      const removed = (messagesByChannel[channelId] ?? []).find((m) => m.id === messageId);
+      hiddenIdsRef.current.add(messageId);
+      setMessagesByChannel((prev) => ({
+        ...prev,
+        [channelId]: (prev[channelId] ?? []).filter((m) => m.id !== messageId),
+      }));
+      if (!supabase) return;
+
+      const { error } = await supabase
+        .from('chat_hidden_messages')
+        .upsert(
+          { message_id: messageId, user_id: userId },
+          { onConflict: 'message_id,user_id', ignoreDuplicates: true }
+        );
+      if (error) {
+        hiddenIdsRef.current.delete(messageId);
+        if (removed) {
+          setMessagesByChannel((prev) => ({
+            ...prev,
+            [channelId]: upsertIntoThread(prev[channelId], removed),
+          }));
+        }
+        notifySyncFailure('Hiding the message', error);
+      }
+    },
+    [userId, messagesByChannel]
+  );
+
+  const toggleReaction = useCallback(
+    async (channelId: string, messageId: string, emoji: string) => {
+      if (!userId) return;
+      const message = (messagesByChannel[channelId] ?? []).find((m) => m.id === messageId);
+      if (!message || message.pending) return;
+
+      const { next, added } = toggleReactionIn(message.reactions, userId, emoji);
+      setMessagesByChannel((prev) =>
+        patchMessage(prev, messageId, (m) => ({ ...m, reactions: next }))
+      );
+      if (!supabase) return;
+
+      const { error } = added
+        ? await supabase
+            .from('chat_reactions')
+            .upsert(
+              { message_id: messageId, user_id: userId, emoji },
+              { onConflict: 'message_id,user_id,emoji', ignoreDuplicates: true }
+            )
+        : await supabase
+            .from('chat_reactions')
+            .delete()
+            .match({ message_id: messageId, user_id: userId, emoji });
+      if (error) {
+        setMessagesByChannel((prev) =>
+          patchMessage(prev, messageId, (m) => ({ ...m, reactions: message.reactions }))
+        );
+        notifySyncFailure('Your reaction', error);
+      }
+    },
+    [userId, messagesByChannel]
+  );
+
   const totalUnread = useMemo(
     () => Object.values(unreadByChannel).reduce((sum, n) => sum + n, 0),
     [unreadByChannel]
@@ -427,7 +640,10 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setActiveChannelId,
       openDirectMessage,
       sendMessage,
+      editMessage,
       deleteMessage,
+      hideMessage,
+      toggleReaction,
       markChannelRead,
       hasLoadedChannels,
       loadingChannelIds,
@@ -441,7 +657,10 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       activeChannelId,
       openDirectMessage,
       sendMessage,
+      editMessage,
       deleteMessage,
+      hideMessage,
+      toggleReaction,
       markChannelRead,
       hasLoadedChannels,
       loadingChannelIds,

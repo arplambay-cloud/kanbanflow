@@ -7,6 +7,8 @@ import {
   dmPair,
   dmPartnerId,
   groupMessagesByDay,
+  summarizeReactions,
+  toggleReactionIn,
 } from './chat';
 import { ChatMessage } from '../types';
 
@@ -19,6 +21,8 @@ const msg = (over: Partial<ChatMessage>): ChatMessage => ({
   senderId: 'u1',
   content: 'hi',
   createdAt: at(10, 0),
+  editedAt: null,
+  reactions: [],
   ...over,
 });
 
@@ -69,6 +73,35 @@ describe('day grouping', () => {
     expect(dayLabel('2026-09-07', now)).toBe('Yesterday');
     expect(dayLabel('2026-09-01', now)).toMatch(/Sep 1/);
     expect(dayLabel('2025-12-25', now)).toMatch(/2025/);
+  });
+});
+
+describe('reactions', () => {
+  it('summarizes one pill per emoji, in first-seen order, and flags the viewer', () => {
+    const summary = summarizeReactions(
+      [
+        { userId: 'u1', emoji: '👍' },
+        { userId: 'u2', emoji: '🎉' },
+        { userId: 'u2', emoji: '👍' },
+        { userId: 'u2', emoji: '👍' }, // duplicate row must not double count
+      ],
+      'u2'
+    );
+    expect(summary).toEqual([
+      { emoji: '👍', count: 2, userIds: ['u1', 'u2'], mine: true },
+      { emoji: '🎉', count: 1, userIds: ['u2'], mine: true },
+    ]);
+    expect(summarizeReactions([{ userId: 'u1', emoji: '👍' }], 'u2')[0].mine).toBe(false);
+  });
+
+  it("toggles only the viewer's own reaction", () => {
+    const start = [{ userId: 'u1', emoji: '👍' }];
+    const added = toggleReactionIn(start, 'u2', '👍');
+    expect(added.added).toBe(true);
+    expect(added.next).toHaveLength(2);
+    const removed = toggleReactionIn(added.next, 'u2', '👍');
+    expect(removed.added).toBe(false);
+    expect(removed.next).toEqual(start);
   });
 });
 

@@ -1,6 +1,22 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Hash, Loader2, MessageSquare, Search, Send, Trash2, WifiOff } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  Copy,
+  EyeOff,
+  Hash,
+  Loader2,
+  MessageSquare,
+  MoreHorizontal,
+  Pencil,
+  Search,
+  Send,
+  Trash2,
+  WifiOff,
+  X,
+} from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import { useChat } from '../../context/ChatContext';
@@ -10,13 +26,16 @@ import { ConfirmDialog } from '../common/ConfirmDialog';
 import { ChatMessage, User } from '../../types';
 import {
   GENERAL_CHANNEL_ID,
+  REACTION_EMOJIS,
   clockTime,
   continuesRun,
   dayLabel,
   dmChannelId,
   dmPartnerId,
   groupMessagesByDay,
+  summarizeReactions,
 } from '../../utils/chat';
+import { notifyError, notifySuccess } from '../../utils/toast';
 
 const DM_ID_PATTERN = /^dm-([0-9a-f-]{36})-([0-9a-f-]{36})$/i;
 
@@ -33,7 +52,10 @@ export const ChatView: React.FC = () => {
     setActiveChannelId,
     openDirectMessage,
     sendMessage,
+    editMessage,
     deleteMessage,
+    hideMessage,
+    toggleReaction,
     hasLoadedChannels,
     loadingChannelIds,
     isChatAvailable,
@@ -44,6 +66,7 @@ export const ChatView: React.FC = () => {
 
   const [search, setSearch] = useState('');
   const [draft, setDraft] = useState('');
+  const [editing, setEditing] = useState<{ id: string; draft: string } | null>(null);
   const [pendingDelete, setPendingDelete] = useState<ChatMessage | null>(null);
 
   const usersById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
@@ -118,6 +141,7 @@ export const ChatView: React.FC = () => {
   useEffect(() => {
     stickToBottomRef.current = true;
     setDraft('');
+    setEditing(null);
   }, [activeChannelId]);
 
   useEffect(() => {
@@ -145,6 +169,24 @@ export const ChatView: React.FC = () => {
       handleSend();
     }
   };
+
+  const copyMessage = async (message: ChatMessage) => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      notifySuccess('Copied to clipboard.');
+    } catch {
+      notifyError('Could not copy — your browser blocked clipboard access.');
+    }
+  };
+
+  const saveEdit = () => {
+    if (!editing || !activeChannelId) return;
+    editMessage(activeChannelId, editing.id, editing.draft);
+    setEditing(null);
+  };
+
+  const reactorNames = (userIds: string[]) =>
+    userIds.map((id) => (id === me ? 'You' : (usersById.get(id)?.name ?? 'Former member')));
 
   if (!isChatAvailable) {
     return (
@@ -303,17 +345,31 @@ export const ChatView: React.FC = () => {
                 dayGroups.map((group) => (
                   <div key={group.dayKey}>
                     <DaySeparator label={dayLabel(group.dayKey)} />
-                    {group.messages.map((message, i) => (
-                      <MessageRow
-                        key={message.id}
-                        message={message}
-                        sender={message.senderId ? usersById.get(message.senderId) : undefined}
-                        isMine={message.senderId === me}
-                        continued={continuesRun(group.messages[i - 1], message)}
-                        canDelete={message.senderId === me || isAdmin}
-                        onDelete={() => setPendingDelete(message)}
-                      />
-                    ))}
+                    {group.messages.map((message, i) => {
+                      const isMine = message.senderId === me;
+                      return (
+                        <MessageRow
+                          key={message.id}
+                          message={message}
+                          sender={message.senderId ? usersById.get(message.senderId) : undefined}
+                          viewerId={me}
+                          isMine={isMine}
+                          continued={continuesRun(group.messages[i - 1], message)}
+                          canEdit={isMine}
+                          canDeleteForEveryone={isMine || isAdmin}
+                          editing={editing?.id === message.id ? editing.draft : null}
+                          onEditDraft={(draft) => setEditing({ id: message.id, draft })}
+                          onEditSave={saveEdit}
+                          onEditCancel={() => setEditing(null)}
+                          onStartEdit={() => setEditing({ id: message.id, draft: message.content })}
+                          onReact={(emoji) => toggleReaction(activeChannelId, message.id, emoji)}
+                          onCopy={() => copyMessage(message)}
+                          onHide={() => hideMessage(activeChannelId, message.id)}
+                          onDeleteForEveryone={() => setPendingDelete(message)}
+                          reactorNames={reactorNames}
+                        />
+                      );
+                    })}
                   </div>
                 ))
               )}
@@ -349,9 +405,9 @@ export const ChatView: React.FC = () => {
 
       <ConfirmDialog
         isOpen={!!pendingDelete}
-        title="Delete message"
-        message="This message will be removed for everyone in the conversation."
-        confirmLabel="Delete"
+        title="Delete for everyone"
+        message="This message will be removed from the conversation for every member. This cannot be undone."
+        confirmLabel="Delete for everyone"
         onConfirm={() => {
           if (pendingDelete && activeChannelId) deleteMessage(activeChannelId, pendingDelete.id);
           setPendingDelete(null);
@@ -389,7 +445,11 @@ const ConversationRow: React.FC<{
   >
     {icon}
     <div className="flex-1 min-w-0">
-      <div className={`text-xs truncate ${unread > 0 || active ? 'font-bold text-slate-900' : 'font-semibold text-slate-700'}`}>
+      <div
+        className={`text-xs truncate ${
+          unread > 0 || active ? 'font-bold text-slate-900' : 'font-semibold text-slate-700'
+        }`}
+      >
         {title}
       </div>
       {subtitle && <div className="text-[11px] text-slate-400 truncate">{subtitle}</div>}
@@ -410,18 +470,68 @@ const DaySeparator: React.FC<{ label: string }> = ({ label }) => (
   </div>
 );
 
-const MessageRow: React.FC<{
+interface MessageRowProps {
   message: ChatMessage;
   sender?: User;
+  viewerId: string;
   isMine: boolean;
   continued: boolean;
-  canDelete: boolean;
-  onDelete: () => void;
-}> = ({ message, sender, isMine, continued, canDelete, onDelete }) => {
+  canEdit: boolean;
+  canDeleteForEveryone: boolean;
+  /** The in-progress edit text when this message is being edited, else null. */
+  editing: string | null;
+  onEditDraft: (draft: string) => void;
+  onEditSave: () => void;
+  onEditCancel: () => void;
+  onStartEdit: () => void;
+  onReact: (emoji: string) => void;
+  onCopy: () => void;
+  onHide: () => void;
+  onDeleteForEveryone: () => void;
+  reactorNames: (userIds: string[]) => string[];
+}
+
+const MessageRow: React.FC<MessageRowProps> = ({
+  message,
+  sender,
+  viewerId,
+  isMine,
+  continued,
+  canEdit,
+  canDeleteForEveryone,
+  editing,
+  onEditDraft,
+  onEditSave,
+  onEditCancel,
+  onStartEdit,
+  onReact,
+  onCopy,
+  onHide,
+  onDeleteForEveryone,
+  reactorNames,
+}) => {
   const name = sender?.name ?? 'Former member';
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const reactions = useMemo(
+    () => summarizeReactions(message.reactions, viewerId),
+    [message.reactions, viewerId]
+  );
+  const isEditing = editing !== null;
+
+  const onEditKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      onEditSave();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      onEditCancel();
+    }
+  };
+
   return (
     <div
-      className={`group flex items-end gap-2.5 ${continued ? 'mt-0.5' : 'mt-4'} ${
+      className={`group flex items-start gap-2.5 ${continued ? 'mt-0.5' : 'mt-4'} ${
         isMine ? 'flex-row-reverse' : ''
       }`}
     >
@@ -438,31 +548,248 @@ const MessageRow: React.FC<{
             <span className="text-[10px] text-slate-400">{clockTime(message.createdAt)}</span>
           </div>
         )}
-        <div
-          className={`px-3.5 py-2 rounded-2xl text-sm whitespace-pre-wrap break-words shadow-subtle ${
-            isMine
-              ? 'bg-indigo-600 text-white rounded-br-md'
-              : 'bg-white border border-slate-200 text-slate-800 rounded-bl-md'
-          } ${message.pending ? 'opacity-60' : ''}`}
-        >
-          {message.content}
+
+        {/* Bubble + actions share a row so the menu button always sits at the bubble's top edge. */}
+        <div className={`flex items-start gap-1 max-w-full ${isMine ? 'flex-row-reverse' : ''}`}>
+          {isEditing ? (
+            <div className="w-72 max-w-full">
+              <AutoGrowTextarea
+                autoFocus
+                minRows={1}
+                maxHeight={200}
+                value={editing}
+                onChange={(e) => onEditDraft(e.target.value)}
+                onKeyDown={onEditKeyDown}
+                className="w-full px-3 py-2 rounded-xl border border-indigo-500 bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+              <div className={`flex items-center gap-1.5 mt-1.5 ${isMine ? 'justify-end' : ''}`}>
+                <button
+                  onClick={onEditCancel}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold text-slate-600 hover:bg-slate-100"
+                >
+                  <X className="w-3 h-3" />
+                  Cancel
+                </button>
+                <button
+                  onClick={onEditSave}
+                  disabled={!editing.trim() || editing.trim() === message.content}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Check className="w-3 h-3" />
+                  Save
+                </button>
+                <span className="text-[10px] text-slate-400 ml-1 hidden sm:inline">
+                  Esc to cancel · Enter to save
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div
+              className={`min-w-0 px-3.5 py-2 rounded-2xl text-sm whitespace-pre-wrap break-words shadow-subtle ${
+                isMine
+                  ? 'bg-indigo-600 text-white rounded-br-md'
+                  : 'bg-white border border-slate-200 text-slate-800 rounded-bl-md'
+              } ${message.pending ? 'opacity-60' : ''}`}
+            >
+              {message.content}
+              {message.editedAt && (
+                <span
+                  className={`ml-1.5 text-[10px] italic ${
+                    isMine ? 'text-indigo-200' : 'text-slate-400'
+                  }`}
+                  title={`Edited ${clockTime(message.editedAt)}`}
+                >
+                  (edited)
+                </span>
+              )}
+            </div>
+          )}
+
+          {!isEditing && !message.pending && (
+            <div
+              className={`shrink-0 flex items-center gap-1 mt-0.5 transition-opacity ${
+                menuOpen
+                  ? 'opacity-100'
+                  : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100'
+              } ${isMine ? 'flex-row-reverse' : ''}`}
+            >
+              <button
+                ref={menuButtonRef}
+                onClick={() => setMenuOpen((open) => !open)}
+                aria-label="Message options"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                className={`p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 ${
+                  menuOpen ? 'bg-slate-200/70 text-slate-700' : ''
+                }`}
+              >
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
+              {continued && (
+                <span className="text-[10px] text-slate-400">{clockTime(message.createdAt)}</span>
+              )}
+            </div>
+          )}
         </div>
+
+        {reactions.length > 0 && (
+          <div className={`flex flex-wrap gap-1 mt-1 ${isMine ? 'justify-end' : ''}`}>
+            {reactions.map((r) => (
+              <button
+                key={r.emoji}
+                onClick={() => onReact(r.emoji)}
+                title={reactorNames(r.userIds).join(', ')}
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] leading-none border transition-colors ${
+                  r.mine
+                    ? 'bg-indigo-50 border-indigo-300 text-indigo-700'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-300'
+                }`}
+              >
+                <span className="text-sm leading-none">{r.emoji}</span>
+                <span className="font-semibold">{r.count}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="self-center flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        {continued && (
-          <span className="text-[10px] text-slate-400">{clockTime(message.createdAt)}</span>
-        )}
-        {canDelete && !message.pending && (
-          <button
-            onClick={onDelete}
-            className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50"
-            title="Delete message"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        )}
-      </div>
+      {menuOpen && menuButtonRef.current && (
+        <MessageMenu
+          anchor={menuButtonRef.current}
+          align={isMine ? 'right' : 'left'}
+          onClose={() => setMenuOpen(false)}
+        >
+          <div className="flex items-center justify-between px-1.5 pb-1.5 mb-1 border-b border-slate-100">
+            {REACTION_EMOJIS.map((emoji) => {
+              const mine = reactions.some((r) => r.emoji === emoji && r.mine);
+              return (
+                <button
+                  key={emoji}
+                  onClick={() => {
+                    onReact(emoji);
+                    setMenuOpen(false);
+                  }}
+                  title={mine ? 'Remove reaction' : 'React'}
+                  className={`w-7 h-7 rounded-lg text-base flex items-center justify-center hover:bg-slate-100 hover:scale-110 transition-transform ${
+                    mine ? 'bg-indigo-50 ring-1 ring-indigo-300' : ''
+                  }`}
+                >
+                  {emoji}
+                </button>
+              );
+            })}
+          </div>
+          <MenuItem icon={Copy} label="Copy text" onClick={() => { onCopy(); setMenuOpen(false); }} />
+          {canEdit && (
+            <MenuItem icon={Pencil} label="Edit" onClick={() => { onStartEdit(); setMenuOpen(false); }} />
+          )}
+          <MenuItem icon={EyeOff} label="Delete for me" onClick={() => { onHide(); setMenuOpen(false); }} />
+          {canDeleteForEveryone && (
+            <MenuItem
+              icon={Trash2}
+              label="Delete for everyone"
+              danger
+              onClick={() => {
+                onDeleteForEveryone();
+                setMenuOpen(false);
+              }}
+            />
+          )}
+        </MessageMenu>
+      )}
     </div>
+  );
+};
+
+const MenuItem: React.FC<{
+  icon: React.FC<{ className?: string }>;
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
+}> = ({ icon: Icon, label, onClick, danger = false }) => (
+  <button
+    role="menuitem"
+    onClick={onClick}
+    className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium text-left transition-colors ${
+      danger ? 'text-rose-600 hover:bg-rose-50' : 'text-slate-700 hover:bg-slate-50'
+    }`}
+  >
+    <Icon className={`w-4 h-4 ${danger ? 'text-rose-500' : 'text-slate-400'}`} />
+    <span>{label}</span>
+  </button>
+);
+
+const MENU_WIDTH = 224;
+const MENU_MARGIN = 8;
+
+/**
+ * A small popover anchored to a button, rendered into <body>.
+ *
+ * The thread is a scroll container, so a menu positioned inside it would be
+ * clipped for the last few messages. This measures the anchor, opens below it
+ * — or above when there is no room — and closes on outside click, Escape, or
+ * any scroll, since a fixed menu would otherwise drift away from its message.
+ */
+const MessageMenu: React.FC<{
+  anchor: HTMLElement;
+  align: 'left' | 'right';
+  onClose: () => void;
+  children: React.ReactNode;
+}> = ({ anchor, align, onClose, children }) => {
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [style, setStyle] = useState<React.CSSProperties>({ visibility: 'hidden' });
+
+  useLayoutEffect(() => {
+    const rect = anchor.getBoundingClientRect();
+    const menuHeight = menuRef.current?.offsetHeight ?? 0;
+    const spaceBelow = window.innerHeight - rect.bottom - MENU_MARGIN;
+    const openAbove = menuHeight > spaceBelow && rect.top > menuHeight + MENU_MARGIN;
+
+    let left = align === 'left' ? rect.left : rect.right - MENU_WIDTH;
+    left = Math.max(MENU_MARGIN, Math.min(left, window.innerWidth - MENU_WIDTH - MENU_MARGIN));
+
+    setStyle({
+      position: 'fixed',
+      width: MENU_WIDTH,
+      left,
+      ...(openAbove
+        ? { bottom: window.innerHeight - rect.top + 4 }
+        : { top: rect.bottom + 4 }),
+    });
+  }, [anchor, align]);
+
+  useEffect(() => {
+    const onPointerDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (menuRef.current?.contains(target) || anchor.contains(target)) return;
+      onClose();
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    // Capture phase so scrolling any ancestor — including the thread — closes it.
+    document.addEventListener('scroll', onClose, true);
+    window.addEventListener('resize', onClose);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('scroll', onClose, true);
+      window.removeEventListener('resize', onClose);
+    };
+  }, [anchor, onClose]);
+
+  if (typeof document === 'undefined') return null;
+  return createPortal(
+    <div
+      ref={menuRef}
+      role="menu"
+      style={style}
+      className="z-[90] bg-white rounded-xl shadow-floating border border-slate-200 p-1.5 animate-fade-in"
+    >
+      {children}
+    </div>,
+    document.body
   );
 };
