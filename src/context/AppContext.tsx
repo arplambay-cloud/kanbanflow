@@ -292,6 +292,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           avatar: p.avatar_url || '',
           role: (p.role as 'admin' | 'member') || 'member',
           jobTitle: p.job_title || 'Team Member',
+          lastSeenAt: p.last_seen_at ?? null,
         }));
         setUsers(mappedUsers);
         safeStorageSave(LOCAL_STORAGE_KEYS.USERS, mappedUsers);

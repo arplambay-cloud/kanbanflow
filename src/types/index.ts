@@ -15,6 +15,8 @@ export interface User {
   avatar: string;
   role: 'admin' | 'member';
   jobTitle: string;
+  /** Heartbeat from the member's most recent session; null if they have not signed in since it was added. */
+  lastSeenAt?: string | null;
 }
 
 export interface TaskComment {

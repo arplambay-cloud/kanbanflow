@@ -7,6 +7,7 @@ import {
   dmPair,
   dmPartnerId,
   groupMessagesByDay,
+  presenceLabel,
   summarizeReactions,
   toggleReactionIn,
 } from './chat';
@@ -102,6 +103,17 @@ describe('reactions', () => {
     const removed = toggleReactionIn(added.next, 'u2', '👍');
     expect(removed.added).toBe(false);
     expect(removed.next).toEqual(start);
+  });
+});
+
+describe('presenceLabel', () => {
+  it('prefers online, then a relative last-seen, then nothing', () => {
+    expect(presenceLabel(true, null)).toBe('Online');
+    expect(presenceLabel(true, new Date().toISOString())).toBe('Online');
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    expect(presenceLabel(false, fiveMinutesAgo)).toBe('Last seen 5m ago');
+    expect(presenceLabel(false, null)).toBeNull();
+    expect(presenceLabel(false, undefined)).toBeNull();
   });
 });
 

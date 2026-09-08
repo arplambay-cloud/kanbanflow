@@ -33,6 +33,7 @@ import {
   dmChannelId,
   dmPartnerId,
   groupMessagesByDay,
+  presenceLabel,
   summarizeReactions,
 } from '../../utils/chat';
 import { notifyError, notifySuccess } from '../../utils/toast';
@@ -56,6 +57,8 @@ export const ChatView: React.FC = () => {
     deleteMessage,
     hideMessage,
     toggleReaction,
+    onlineUserIds,
+    lastSeenById,
     hasLoadedChannels,
     loadingChannelIds,
     isChatAvailable,
@@ -121,6 +124,16 @@ export const ChatView: React.FC = () => {
 
   const partnerId = activeChannel ? dmPartnerId(activeChannel, me) : null;
   const partner = partnerId ? usersById.get(partnerId) : undefined;
+  const partnerOnline = !!partnerId && onlineUserIds.has(partnerId);
+  const partnerStatus = partnerId
+    ? presenceLabel(partnerOnline, lastSeenById[partnerId] ?? partner?.lastSeenAt ?? null)
+    : null;
+  // Count members we know about, not raw presence keys — a stale key from a
+  // deleted account must not inflate the number.
+  const onlineCount = useMemo(
+    () => users.filter((u) => onlineUserIds.has(u.id)).length,
+    [users, onlineUserIds]
+  );
   const title =
     activeChannel?.kind === 'group'
       ? `# ${activeChannel.name}`
@@ -246,7 +259,7 @@ export const ChatView: React.FC = () => {
                   </div>
                 }
                 title={c.name ?? c.id}
-                subtitle="Everyone in the workspace"
+                subtitle={`Everyone in the workspace · ${onlineCount} online`}
               />
             ))
           )}
@@ -267,7 +280,7 @@ export const ChatView: React.FC = () => {
                   active={id === activeChannelId}
                   unread={unreadByChannel[id] ?? 0}
                   onClick={() => openDm(u.id)}
-                  icon={<UserAvatar user={u} size="md" />}
+                  icon={<UserAvatar user={u} size="md" online={onlineUserIds.has(u.id)} />}
                   title={u.name}
                   subtitle={u.jobTitle || u.email}
                 />
@@ -302,7 +315,11 @@ export const ChatView: React.FC = () => {
                 <ArrowLeft className="w-5 h-5" />
               </button>
               {activeChannel?.kind === 'dm' ? (
-                <UserAvatar user={partner ?? { name: 'Former member' }} size="lg" />
+                <UserAvatar
+                  user={partner ?? { name: 'Former member' }}
+                  size="lg"
+                  online={partnerOnline}
+                />
               ) : (
                 <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
                   <Hash className="w-5 h-5" />
@@ -310,12 +327,17 @@ export const ChatView: React.FC = () => {
               )}
               <div className="min-w-0">
                 <h3 className="font-bold text-slate-900 text-sm truncate">{title}</h3>
-                <p className="text-[11px] text-slate-500 truncate">
+                <p
+                  className={`text-[11px] truncate ${
+                    partnerOnline ? 'text-emerald-600 font-semibold' : 'text-slate-500'
+                  }`}
+                >
                   {activeChannel?.kind === 'dm'
-                    ? partner?.jobTitle || partner?.email || 'This member has left the workspace'
+                    ? (partnerStatus ??
+                      (partner?.jobTitle || partner?.email || 'This member has left the workspace'))
                     : `Everyone in ${workspace.name} · ${users.length} ${
                         users.length === 1 ? 'member' : 'members'
-                      }`}
+                      } · ${onlineCount} online`}
                 </p>
               </div>
             </header>

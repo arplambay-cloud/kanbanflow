@@ -1,4 +1,5 @@
 import { ChatChannel, ChatMessage, ChatReaction } from '../types';
+import { timeAgo } from './date';
 
 /** The one channel every workspace member shares. Seeded by the schema. */
 export const GENERAL_CHANNEL_ID = 'general';
@@ -29,6 +30,16 @@ export function dmPartnerId(
   if (channel.dmUserA === viewerId) return channel.dmUserB;
   if (channel.dmUserB === viewerId) return channel.dmUserA;
   return null;
+}
+
+/**
+ * What to say under a teammate's name: "Online", "Last seen 5m ago", or null
+ * when neither is known (they have never signed in since presence shipped).
+ */
+export function presenceLabel(online: boolean, lastSeenAt: string | null | undefined): string | null {
+  if (online) return 'Online';
+  if (!lastSeenAt) return null;
+  return `Last seen ${timeAgo(lastSeenAt)}`;
 }
 
 /** The reactions offered in the message menu. */

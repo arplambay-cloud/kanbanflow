@@ -7,6 +7,8 @@ interface UserAvatarProps {
   showName?: boolean;
   showRole?: boolean;
   className?: string;
+  /** Show a green presence dot on the avatar. */
+  online?: boolean;
 }
 
 export const UserAvatar: React.FC<UserAvatarProps> = ({
@@ -15,6 +17,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   showName = false,
   showRole = false,
   className = '',
+  online = false,
 }) => {
   const [imageError, setImageError] = useState(false);
 
@@ -51,6 +54,14 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
     xl: 'w-14 h-14 text-base',
   };
 
+  const dotClasses = {
+    xs: 'w-1.5 h-1.5 -bottom-px -right-px',
+    sm: 'w-2 h-2 -bottom-px -right-px',
+    md: 'w-2.5 h-2.5 -bottom-0.5 -right-0.5',
+    lg: 'w-3 h-3 -bottom-0.5 -right-0.5',
+    xl: 'w-3.5 h-3.5 bottom-0 right-0',
+  };
+
   const safeName = (user.name || 'User').trim() || 'User';
   const initials = safeName
     .split(' ')
@@ -76,6 +87,13 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
           >
             {initials}
           </div>
+        )}
+        {online && (
+          <span
+            className={`absolute rounded-full bg-emerald-500 ring-2 ring-white ${dotClasses[size]}`}
+            title="Online"
+            aria-label="Online"
+          />
         )}
       </div>
 

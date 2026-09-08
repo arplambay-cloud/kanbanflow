@@ -34,6 +34,10 @@ interface ChatContextType {
   hideMessage: (channelId: string, messageId: string) => Promise<void>;
   toggleReaction: (channelId: string, messageId: string, emoji: string) => Promise<void>;
   markChannelRead: (channelId: string) => void;
+  /** Ids of members currently connected, from realtime presence. */
+  onlineUserIds: Set<string>;
+  /** When a member was last seen, for those this session watched go offline. */
+  lastSeenById: Record<string, string>;
   hasLoadedChannels: boolean;
   loadingChannelIds: Record<string, boolean>;
   /** False in local-only mode: messaging has no offline story. */
@@ -146,6 +150,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [hasLoadedChannels, setHasLoadedChannels] = useState(false);
   const [loadingChannelIds, setLoadingChannelIds] = useState<Record<string, boolean>>({});
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(() => new Set());
+  const [lastSeenById, setLastSeenById] = useState<Record<string, string>>({});
 
   // The realtime handler is registered once per session, so it reads current
   // state through refs rather than through a closure that would go stale.
@@ -265,6 +271,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUnreadByChannel({});
       setActiveChannelId(null);
       setHasLoadedChannels(false);
+      setOnlineUserIds(new Set());
+      setLastSeenById({});
       loadedThreadsRef.current = new Set();
       hiddenIdsRef.current = new Set();
       return;
@@ -398,6 +406,56 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       client.removeChannel(channel);
     };
   }, [isChatAvailable, userId, loadChannels, markChannelRead]);
+
+  // Who is online. Realtime Presence keeps this in sync with no table and no
+  // polling: every connected client tracks itself under its user id, and each
+  // client receives the merged state whenever someone joins or leaves.
+  useEffect(() => {
+    if (!isChatAvailable || !supabase || !userId) return;
+    const client = supabase;
+
+    const presence = client.channel('kanbanflow_presence', {
+      config: { presence: { key: userId } },
+    });
+
+    presence
+      .on('presence', { event: 'sync' }, () => {
+        setOnlineUserIds(new Set(Object.keys(presence.presenceState())));
+      })
+      .on('presence', { event: 'leave' }, ({ key }) => {
+        // We watched them go, so we know exactly when — more precise than the
+        // heartbeat column, which can run up to a minute behind.
+        setLastSeenById((prev) => ({ ...prev, [key]: new Date().toISOString() }));
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presence.track({ online_at: new Date().toISOString() });
+        }
+      });
+
+    // last_seen_at is for people who open the app later, after presence has
+    // forgotten us. A minute of staleness is fine for "Last seen 3m ago".
+    const heartbeat = async () => {
+      const { error } = await client
+        .from('profiles')
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq('id', userId);
+      if (error) console.warn('Presence: could not update last_seen_at:', error.message);
+    };
+    heartbeat();
+    const timer = window.setInterval(heartbeat, 60_000);
+    const onPageHide = () => {
+      heartbeat();
+    };
+    window.addEventListener('pagehide', onPageHide);
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('pagehide', onPageHide);
+      presence.untrack();
+      client.removeChannel(presence);
+    };
+  }, [isChatAvailable, userId]);
 
   // Opening a conversation loads it and clears its badge.
   useEffect(() => {
@@ -645,6 +703,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       hideMessage,
       toggleReaction,
       markChannelRead,
+      onlineUserIds,
+      lastSeenById,
       hasLoadedChannels,
       loadingChannelIds,
       isChatAvailable,
@@ -662,6 +722,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       hideMessage,
       toggleReaction,
       markChannelRead,
+      onlineUserIds,
+      lastSeenById,
       hasLoadedChannels,
       loadingChannelIds,
       isChatAvailable,

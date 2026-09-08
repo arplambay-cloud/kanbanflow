@@ -20,6 +20,11 @@ create table if not exists public.profiles (
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- Heartbeat from each member's most recent session, for "Last seen 3m ago" in
+-- chat. See migrations/20260908_profile_last_seen.sql.
+alter table public.profiles
+  add column if not exists last_seen_at timestamp with time zone;
+
 -- ------------------------------------------------------------------------------
 -- 2. AUTOMATIC FIRST-USER ADMIN TRIGGER FUNCTION
 -- Automatically makes the 1st registered user an 'admin', and all subsequent users 'member'
